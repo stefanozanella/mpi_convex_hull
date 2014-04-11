@@ -1,0 +1,15 @@
+#!/bin/bash
+# vim: syn=sh
+
+#@ job_name = mpi_convex_hull
+#@ initialdir = /home/zanellas/mpi_convex_hull
+#@ input = /dev/null
+#@ output = run/$(job_name).out
+#@ error = run/$(job_name).err
+#@ class = short
+#@ job_type = parallel
+#@ blocking = unlimited
+#@ total_tasks = 4
+#@ queue
+
+./mpi_convex_hull

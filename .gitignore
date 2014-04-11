@@ -1,0 +1,5 @@
+*.sw[po]
+*.o
+bin
+.vagrant
+data/*.dat

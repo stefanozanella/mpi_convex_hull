@@ -1,0 +1,1 @@
+class { 'mpi_builder': }
