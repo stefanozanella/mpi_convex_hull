@@ -12,4 +12,4 @@
 #@ total_tasks = 4
 #@ queue
 
-./mpi_convex_hull
+bin/mpi_convex_hull

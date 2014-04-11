@@ -40,10 +40,11 @@
 #.PHONY : prep clean
 
 CPUS = 4
-JOBFILE = jobs/$(executable).job
+JOBFILE = jobs/mpi_convex_hull.job
 
 objects = src/main.o
-executable = mpi_convex_hull
+executable = $(bindir)/mpi_convex_hull
+bindir = bin
 rundir = run
 
 mpcc := $(shell which mpcc 2> /dev/null)
@@ -62,8 +63,11 @@ ifeq ($(mpicc)$(mpcc),)
 		build the project on a suitable machine)
 endif
 
-$(executable) : $(objects)
+$(executable) : $(objects) $(bindir)
 	$(CC) -o $(executable) $(objects)
+
+$(bindir) :
+	mkdir $(bindir)
 
 .PHONY : clean, clear, run, submit, deploy
 
