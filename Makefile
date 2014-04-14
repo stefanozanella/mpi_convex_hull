@@ -30,11 +30,13 @@ ifeq ($(mpicc)$(mpcc),)
 		build the project on a suitable machine)
 endif
 
+CFLAGS = -std=c99
+
 $(mpi_convex_hull_executable) : $(mpi_convex_hull_objects) $(bindir)
-	$(CC) -o $(mpi_convex_hull_executable) $(mpi_convex_hull_objects)
+	$(CC) $(CFLAGS) -o $(mpi_convex_hull_executable) $(mpi_convex_hull_objects)
 
 $(generate_point_cloud_executable) : $(generate_point_cloud_objects) $(bindir)
-	$(CC) -o $(generate_point_cloud_executable) $(generate_point_cloud_objects)
+	$(CC) $(CFLAGS) -o $(generate_point_cloud_executable) $(generate_point_cloud_objects)
 
 $(bindir) :
 	mkdir $(bindir)
