@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <sysexits.h>
 
-point random_point_generator(int index, coord_t limit) {
+point random_point_generator(cloud_size_t index, cloud_size_t size) {
   point p = { 0, 0 };
 
   return p;
@@ -19,10 +19,23 @@ int main(int argc, const char **argv) {
   parse_args(argc, argv, &opts);
   opts.point_generator = &random_point_generator;
 
-  printf("Point cloud size: %ld\n", opts.cloud_size);
+  printf("Generating point cloud of size: %ld\n", opts.cloud_size);
 
   point_cloud pc;
   generate_point_cloud(&pc, opts);
 
-  return 0;
+  printf("Storing point cloud into %s\n", opts.dest_file);
+  FILE *out;
+  if ((out = fopen(opts.dest_file, "w")) == NULL) {
+    // TODO: Error handling
+    printf("Error opening file %s. Aborting.\n", opts.dest_file);
+    exit(EX_IOERR);
+  }
+
+  save_point_cloud(&pc, out);
+  fclose(out);
+
+  printf("Calculating convex hull for generated cloud.\n");
+
+  return EX_OK;
 }

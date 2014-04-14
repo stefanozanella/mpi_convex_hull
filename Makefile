@@ -11,6 +11,7 @@ generate_point_cloud_executable = $(bindir)/generate_point_cloud
 
 bindir = bin
 rundir = run
+datadir = data
 
 test_files = test/generate_point_cloud_test.c
 
@@ -48,7 +49,7 @@ clean :
 		$(generate_point_cloud_objects) $(generate_point_cloud_executable)
 
 clear : clean
-	-rm -rf $(rundir)
+	-rm -rf $(rundir) $(datadir)
 
 run :
 	mpirun -np $(CPUS) $(mpi_convex_hull_executable)
@@ -59,6 +60,10 @@ submit : $(mpi_convex_hull_executable)
 
 deploy :
 	rsync -aPv . splab:mpi_convex_hull --exclude="*.sw[po]" --exclude="tmp" --exclude="bin"
+
+gen_data: $(generate_point_cloud_executable)
+	-mkdir -p data
+	$(generate_point_cloud_executable) 123456 $(datadir)/cloud_123456.dat
 
 # ###############
 # Testing harness
@@ -93,4 +98,4 @@ $(gtest_exec) : $(gtest_libs) $(test_files) src/point_cloud_gen.c
 test : $(gtest_exec)
 	$(gtest_exec)
 
-.PHONY : all, clean, clear, run, submit, deploy, test
+.PHONY : all, clean, clear, run, submit, deploy, test, gen_data

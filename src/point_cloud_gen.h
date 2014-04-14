@@ -12,7 +12,8 @@ typedef struct {
 
 typedef struct {
   cloud_size_t cloud_size;
-  point (*point_generator)(int index, coord_t limit);
+  point (*point_generator)(cloud_size_t index, cloud_size_t size);
+  const char *dest_file;
 } options;
 
 typedef struct {
@@ -37,5 +38,10 @@ void generate_point_cloud(point_cloud *pc, options opts);
  * Prints help screen.
  */
 void print_usage(const char *prog_name, FILE *outstream);
+
+/**
+ * Stores a point cloud in a Gnuplot-compatible text format.
+ */
+void save_point_cloud(point_cloud *pc, FILE *out_stream);
 
 #endif
