@@ -70,32 +70,39 @@ gen_data: $(generate_point_cloud_executable)
 # ###############
 
 tmp_dir = tmp
-gtest_dir = $(tmp_dir)/gtest-1.7.0
-gtest_pkg = $(tmp_dir)/gtest-1.7.0.zip
-gtest_url = https://googletest.googlecode.com/files/gtest-1.7.0.zip
-gtest_build_dir = $(gtest_dir)/build
+
+gmock_url = https://googlemock.googlecode.com/files/gmock-1.7.0.zip
+gmock_dir = $(tmp_dir)/gmock-1.7.0
+gmock_pkg = $(tmp_dir)/gmock-1.7.0.zip
+gmock_build_dir = $(gmock_dir)/build
+gmock_include_dir = $(gmock_dir)/include
+gmock_libs = $(gmock_build_dir)/libgmock.a $(gmock_build_dir)/libgmock_main.a
+gmock_main = $(gmock_dir)/src/gmock_main.cc
+
+gtest_build_dir = $(gmock_build_dir)/gtest
 gtest_libs = $(gtest_build_dir)/libgtest.a $(gtest_build_dir)/libgtest_main.a
-gtest_include_dir = $(gtest_dir)/include
-gtest_main = $(gtest_dir)/src/gtest_main.cc
-gtest_exec = bin/test
+gtest_include_dir = $(gmock_dir)/gtest/include
 
-$(gtest_pkg) :
+gmock_exec = bin/test
+
+$(gmock_pkg) :
 	-mkdir -p $(tmp_dir)
-	curl -L -o $(gtest_pkg) $(gtest_url)
+	curl -L -o $(gmock_pkg) $(gmock_url)
 
-$(gtest_dir) : $(gtest_pkg)
-	unzip $(gtest_pkg) -d $(tmp_dir)
-	touch $(gtest_dir)
+$(gmock_dir) : $(gmock_pkg)
+	unzip $(gmock_pkg) -d $(tmp_dir)
+	touch $(gmock_pkg)
 
-$(gtest_libs) : $(gtest_dir)
-	mkdir $(gtest_build_dir)
-	cd $(gtest_build_dir) && cmake .. && make
+$(gmock_libs) $(gtest_libs): $(gmock_dir)
+	mkdir $(gmock_build_dir)
+	cd $(gmock_build_dir) && cmake .. && make
 
-$(gtest_exec) : $(gtest_libs) $(test_files) src/point_cloud_gen.c
-	g++ -I$(gtest_include_dir) -Isrc -L$(gtest_build_dir) $(gtest_main) src/point_cloud_gen.c\
-		$(test_files) -lgtest -lpthread -o $(gtest_exec)
+$(gmock_exec) : $(bindir) $(gtest_libs) $(gmock_libs) $(test_files) src/point_cloud_gen.c
+	g++ -I$(gtest_include_dir) -I$(gmock_include_dir) -Isrc \
+		-L$(gtest_build_dir) -L$(gmock_build_dir) $(gmock_main) src/point_cloud_gen.c\
+		$(test_files) -lgmock -lgtest -lpthread -o $(gmock_exec)
 
-test : $(gtest_exec)
-	$(gtest_exec)
+test : $(gmock_exec)
+	$(gmock_exec)
 
 .PHONY : all, clean, clear, run, submit, deploy, test, gen_data
