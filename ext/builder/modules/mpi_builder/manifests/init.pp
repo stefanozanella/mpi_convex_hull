@@ -6,6 +6,7 @@ class mpi_builder {
     'libopenmpi1.6',
     'libopenmpi1.6-dev',
     'openmpi1.6-bin',
+    'unzip',
   ]
 
   package { $build_tools:

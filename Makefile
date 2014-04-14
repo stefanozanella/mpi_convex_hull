@@ -1,51 +1,18 @@
 # vim: noexpandtab
-# .RECIPEPREFIX = >
-
-#BINDIR = bin
-
-#MPICC = $(@which mpcc 2>&1 > /dev/null)
-#CFLAGS = -std=c99
-#ifeq ($(shell which mpcc 2> /dev/null),)
-#	MPICC = mpicc
-#	CFLAGS += -Wall -W -pedantic -Wno-unused-parameter
-#else
-#	MPICC = mpcc
-#endif
-#RUN = mpirun
-
-#LIBS = -lm
-#RUN_OPTS = -np $(PROCS)
-
-#GEN_TEST_DATA_BIN = $(BINDIR)/gen_test_data
-#MPI_CONVEX_HULL_BIN = $(BINDIR)/mpi_convex_hull
-
-#COMMON_SOURCE = src/point_cloud_io.c src/point_cloud_geom.c src/convex_hull.c
-#GEN_TEST_DATA_SOURCE = src/gen_test_data.c $(COMMON_SOURCE)
-#MPI_CONVEX_HULL_SOURCE = src/mpi_convex_hull.c $(COMMON_SOURCE)
-
-#prep:
-#	mkdir -p $(BINDIR)
-
-#gen_test_data: $(GEN_TEST_DATA_SOURCE)
-#	$(CC) $(CFLAGS) -o $(GEN_TEST_DATA_BIN) $^ $(LIBS)
-
-#mpi_convex_hull: $(MPI_CONVEX_HULL_SOURCE)
-#	$(MPICC) $(CFLAGS) -o $(MPI_CONVEX_HULL_BIN) $^ $(LIBS)
-
-#all: prep mpi_convex_hull gen_test_data
-
-#run:
-#	$(RUN) $(RUN_OPTS) $(MPI_CONVEX_HULL_BIN) $(in)
-
-#.PHONY : prep clean
 
 CPUS = 4
 JOBFILE = jobs/mpi_convex_hull.job
 
-objects = src/main.o
-executable = $(bindir)/mpi_convex_hull
+mpi_convex_hull_objects = src/mpi_convex_hull.o
+mpi_convex_hull_executable = $(bindir)/mpi_convex_hull
+
+generate_point_cloud_objects = src/generate_point_cloud.o src/point_cloud_gen.o
+generate_point_cloud_executable = $(bindir)/generate_point_cloud
+
 bindir = bin
 rundir = run
+
+test_files = test/generate_point_cloud_test.c
 
 mpcc := $(shell which mpcc 2> /dev/null)
 mpicc := $(shell which mpicc 2> /dev/null)
@@ -63,26 +30,65 @@ ifeq ($(mpicc)$(mpcc),)
 		build the project on a suitable machine)
 endif
 
-$(executable) : $(objects) $(bindir)
-	$(CC) -o $(executable) $(objects)
+$(mpi_convex_hull_executable) : $(mpi_convex_hull_objects) $(bindir)
+	$(CC) -o $(mpi_convex_hull_executable) $(mpi_convex_hull_objects)
+
+$(generate_point_cloud_executable) : $(generate_point_cloud_objects) $(bindir)
+	$(CC) -o $(generate_point_cloud_executable) $(generate_point_cloud_objects)
 
 $(bindir) :
 	mkdir $(bindir)
 
-.PHONY : clean, clear, run, submit, deploy
+all : $(mpi_convex_hull_executable) $(generate_point_cloud_executable)
 
 clean :
-	-rm $(objects) $(executable)
+	-rm $(mpi_convex_hull_objects) $(mpi_convex_hull_executable) \
+		$(generate_point_cloud_objects) $(generate_point_cloud_executable)
 
 clear : clean
-	-rm -rf $(run)
+	-rm -rf $(rundir)
 
 run :
-	mpirun -np $(CPUS) $(executable)
+	mpirun -np $(CPUS) $(mpi_convex_hull_executable)
 
-submit : $(executable)
+submit : $(mpi_convex_hull_executable)
 	-mkdir -p $(rundir)
 	llsubmit $(JOBFILE)
 
-deploy : clean
-	rsync -aPv . splab:mpi_convex_hull --exclude="*.sw[po]"
+deploy :
+	rsync -aPv . splab:mpi_convex_hull --exclude="*.sw[po]" --exclude="tmp" --exclude="bin"
+
+# ###############
+# Testing harness
+# ###############
+
+tmp_dir = tmp
+gtest_dir = $(tmp_dir)/gtest-1.7.0
+gtest_pkg = $(tmp_dir)/gtest-1.7.0.zip
+gtest_url = https://googletest.googlecode.com/files/gtest-1.7.0.zip
+gtest_build_dir = $(gtest_dir)/build
+gtest_libs = $(gtest_build_dir)/libgtest.a $(gtest_build_dir)/libgtest_main.a
+gtest_include_dir = $(gtest_dir)/include
+gtest_main = $(gtest_dir)/src/gtest_main.cc
+gtest_exec = bin/test
+
+$(gtest_pkg) :
+	-mkdir -p $(tmp_dir)
+	curl -L -o $(gtest_pkg) $(gtest_url)
+
+$(gtest_dir) : $(gtest_pkg)
+	unzip $(gtest_pkg) -d $(tmp_dir)
+	touch $(gtest_dir)
+
+$(gtest_libs) : $(gtest_dir)
+	mkdir $(gtest_build_dir)
+	cd $(gtest_build_dir) && cmake .. && make
+
+$(gtest_exec) : $(gtest_libs) $(test_files) src/point_cloud_gen.c
+	g++ -I$(gtest_include_dir) -Isrc -L$(gtest_build_dir) $(gtest_main) src/point_cloud_gen.c\
+		$(test_files) -lgtest -lpthread -o $(gtest_exec)
+
+test : $(gtest_exec)
+	$(gtest_exec)
+
+.PHONY : all, clean, clear, run, submit, deploy, test
