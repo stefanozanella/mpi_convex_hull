@@ -36,6 +36,7 @@ int main(int argc, const char **argv) {
   fclose(out);
 
   printf("Calculating convex hull for generated cloud.\n");
+  qsort(pc.points, pc.size, sizeof(point), &compare_point);
 
   return EX_OK;
 }

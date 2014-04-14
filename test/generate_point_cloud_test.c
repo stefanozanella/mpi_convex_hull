@@ -118,3 +118,28 @@ TEST(save_point_cloud, serializes_a_point_cloud_by_writing_each_point_on_a_separ
 
   fclose(out_stream);
 }
+
+TEST(compare_point, tells_when_two_points_are_equal_within_given_precision) {
+  point a = { 1.23456123, 7.89012678 };
+  point b = { 1.23456456, 7.89012345 };
+
+  ASSERT_EQ(0, compare_point(&a, &b));
+}
+
+TEST(compare_point, tells_when_the_first_point_is_less_than_the_second_one) {
+  point a = { 1.23456456, 7.89012345 };
+  point b = { 1.23458456, 7.89012345 };
+  point c = { 1.23456456, 7.89017345 };
+
+  ASSERT_LT(compare_point(&a, &b), 0);
+  ASSERT_LT(compare_point(&a, &c), 0);
+}
+
+TEST(compare_point, tells_when_the_first_point_is_greater_than_the_second_one) {
+  point a = { 4.56789012, 3.12345678 };
+  point b = { 4.56784012, 3.12345678 };
+  point c = { 4.56789012, 3.12343678 };
+
+  ASSERT_GT(compare_point(&a, &b), 0);
+  ASSERT_GT(compare_point(&a, &c), 0);
+}

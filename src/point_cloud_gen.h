@@ -44,4 +44,9 @@ void print_usage(const char *prog_name, FILE *outstream);
  */
 void save_point_cloud(point_cloud *pc, FILE *out_stream);
 
+/**
+ * Compares two points lexicographically
+ */
+int compare_point(const void *a, const void *b);
+
 #endif

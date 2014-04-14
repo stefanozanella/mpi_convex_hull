@@ -54,3 +54,16 @@ void save_point_cloud(point_cloud *pc, FILE *out_stream) {
     fprintf(out_stream, "%.5f\t%.5f\n", pc->points[k].x, pc->points[k].y);
   }
 }
+
+int compare_point(const void *ptr_a, const void *ptr_b) {
+  // Note that this operation is a bit risky. If the coordinates held by the
+  // points are large enough, multiplication by 10^5 might let them overflow.
+  // This should be mitigated by setting a limit on the size of the generated
+  // numbers for the point cloud.
+  point a = *(point *)ptr_a;
+  point b = *(point *)ptr_b;
+
+  int dx = ((int)(a.x * 1e5)) - ((int)(b.x * 1e5));
+
+  return dx != 0 ? dx : ((int)(a.y * 1e5)) - ((int)(b.y * 1e5));
+}
