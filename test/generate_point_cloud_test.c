@@ -46,6 +46,31 @@ TEST(parse_args, sets_a_default_dest_file_if_none_specified) {
   ASSERT_STREQ("data/cloud.dat", opts.dest_file);
 }
 
+TEST(parse_args, stores_the_3rd_argument_as_hull_file) {
+  options opts;
+  const char *args[4];
+  args[0] = "program_name";
+  args[1] = "345";
+  args[2] = "path/to/out/file.dat";
+  args[3] = "path/to/hull/output.dat";
+
+  parse_args(4, args, &opts);
+
+  ASSERT_STREQ("path/to/hull/output.dat", opts.hull_file);
+}
+
+TEST(parse_args, sets_a_default_hull_file_if_none_specified) {
+  options opts;
+  const char *args[3];
+  args[0] = "program_name";
+  args[1] = "345";
+  args[2] = "path/to/out/file.dat";
+
+  parse_args(3, args, &opts);
+
+  ASSERT_STREQ("data/hull.dat", opts.hull_file);
+}
+
 point const_generator(cloud_size_t, cloud_size_t) {
   point ret = { 0, 0 };
   return ret;
@@ -143,4 +168,177 @@ TEST(compare_point, tells_when_the_first_point_is_greater_than_the_second_one) {
 
   ASSERT_GT(compare_point(&a, &b), 0);
   ASSERT_GT(compare_point(&a, &c), 0);
+}
+
+TEST(turn, tells_when_three_points_are_collinear) {
+  // We pick three point from the straight line y = 2x + 1
+  point p = { 0.0, 1.0 };
+  point q = { 1.0, 3.0 };
+  point r = { 2.0, 5.0 };
+
+  ASSERT_EQ(TURN_NONE, turn(p, q, r));
+}
+
+TEST(turn, tells_when_three_points_make_a_left_turn) {
+  // We pick three point from the straight line y = 2x + 1
+  point p = { 2.0, 5.0 };
+  point q = { 3.0, 7.0 };
+  point r = { 3.5, 9.0 };
+
+  ASSERT_EQ(TURN_LEFT, turn(p, q, r));
+}
+
+TEST(turn, tells_when_three_points_make_a_right_turn) {
+  // We pick three point from the straight line y = 2x + 1
+  point p = { 4.0, 9.0 };
+  point q = { 5.0, 11.0 };
+  point r = { 6.5, 13.0 };
+
+  ASSERT_EQ(TURN_RIGHT, turn(p, q, r));
+}
+
+TEST(update_hull, just_adds_given_point_when_the_hull_is_empty) {
+  point_cloud hull;
+  point p = { 1.0, 2.0 };
+
+  init_point_cloud(&hull, 2);
+
+  ASSERT_EQ(0, hull.size);
+
+  update_hull(&hull, p);
+
+  ASSERT_EQ(1, hull.size);
+  ASSERT_DOUBLE_EQ(1.0, hull.points[0].x);
+  ASSERT_DOUBLE_EQ(2.0, hull.points[0].y);
+}
+
+TEST(update_hull, just_adds_given_point_when_the_hull_has_a_single_point) {
+  point_cloud hull;
+  point p = { 0.0, 1.0 };
+  point q = { 1.0, 2.0 };
+
+  init_point_cloud(&hull, 2);
+  push(&hull, p);
+
+  update_hull(&hull, q);
+
+  ASSERT_EQ(2, hull.size);
+  ASSERT_DOUBLE_EQ(1.0, hull.points[1].x);
+  ASSERT_DOUBLE_EQ(2.0, hull.points[1].y);
+}
+
+TEST(update_hull, discards_point_in_the_hull_that_correspond_to_right_turns) {
+  point_cloud hull;
+  point p = { 0.0, 0.0 };
+  point q = { 1.0, 1.0 };
+  point r = { 2.0, 0.5 };
+
+  init_point_cloud(&hull, 3);
+  push(&hull, p);
+  push(&hull, q);
+
+  update_hull(&hull, r);
+
+  ASSERT_EQ(2, hull.size);
+
+  // Assert that p is in the hull
+  ASSERT_DOUBLE_EQ(0.0, hull.points[0].x);
+  ASSERT_DOUBLE_EQ(0.0, hull.points[0].y);
+
+  // Assert that r is in the hull
+  ASSERT_DOUBLE_EQ(2.0, hull.points[1].x);
+  ASSERT_DOUBLE_EQ(0.5, hull.points[1].y);
+}
+
+TEST(update_hull, just_adds_given_point_if_it_makes_a_left_turn_with_the_latest_hull_edge) {
+  point_cloud hull;
+  point p = { 0.0, 0.0 };
+  point q = { 1.0, -1.0 };
+  point r = { 2.0, 3.0 };
+
+  init_point_cloud(&hull, 3);
+  push(&hull, p);
+  push(&hull, q);
+
+  update_hull(&hull, r);
+
+  ASSERT_EQ(3, hull.size);
+
+  // Assert that p is in the hull
+  ASSERT_DOUBLE_EQ(0.0, hull.points[0].x);
+  ASSERT_DOUBLE_EQ(0.0, hull.points[0].y);
+
+  // Assert that q is in the hull
+  ASSERT_DOUBLE_EQ(1.0, hull.points[1].x);
+  ASSERT_DOUBLE_EQ(-1.0, hull.points[1].y);
+
+  // Assert that r is in the hull
+  ASSERT_DOUBLE_EQ(2.0, hull.points[2].x);
+  ASSERT_DOUBLE_EQ(3.0, hull.points[2].y);
+}
+
+TEST(update_hull, can_start_comparisons_from_an_arbitrary_point_in_the_hull) {
+  point_cloud hull;
+  point p = { 0.0, 0.0 };
+  point q = { 1.0, -1.0 };
+  point r = { 2.0, 3.0 };
+  point s = { 1.0, 3.5 };
+  point t = { 0.5, 2.0 };
+
+  init_point_cloud(&hull, 5);
+  push(&hull, p);
+  push(&hull, q);
+  push(&hull, r);
+
+  update_hull(&hull, s);
+  update_hull(&hull, t);
+
+  ASSERT_EQ(5, hull.size);
+
+  // Assert that p is in the hull
+  ASSERT_DOUBLE_EQ(0.0, hull.points[0].x);
+  ASSERT_DOUBLE_EQ(0.0, hull.points[0].y);
+
+  // Assert that q is in the hull
+  ASSERT_DOUBLE_EQ(1.0, hull.points[1].x);
+  ASSERT_DOUBLE_EQ(-1.0, hull.points[1].y);
+
+  // Assert that r is in the hull
+  ASSERT_DOUBLE_EQ(2.0, hull.points[2].x);
+  ASSERT_DOUBLE_EQ(3.0, hull.points[2].y);
+
+  // Assert that s is in the hull
+  ASSERT_DOUBLE_EQ(1.0, hull.points[3].x);
+  ASSERT_DOUBLE_EQ(3.5, hull.points[3].y);
+
+  // Assert that t is in the hull
+  ASSERT_DOUBLE_EQ(0.5, hull.points[4].x);
+  ASSERT_DOUBLE_EQ(2.0, hull.points[4].y);
+}
+
+TEST(convex_hull_graham_scan, calculates_the_convex_hull_of_a_given_cloud) {
+  point_cloud hull, cloud;
+  init_point_cloud(&cloud, 10);
+  init_point_cloud(&hull, 10);
+
+  // Convex hull
+  push(&cloud, (point){ 0.0, 0.0 });
+  push(&cloud, (point){ 1.0, -1.0 });
+  push(&cloud, (point){ 2.0, -0.5 });
+  push(&cloud, (point){ 1.0, 0.5 });
+  push(&cloud, (point){ 0.5, 0.4 });
+  // Inner points
+  push(&cloud, (point){ 1.5, -0.5 });
+  push(&cloud, (point){ 1.2, 0.1 });
+  push(&cloud, (point){ 0.7, 0.3 });
+  push(&cloud, (point){ 0.25, 0.45 });
+  push(&cloud, (point){ 0.5, -0.3 });
+
+  convex_hull_graham_scan(&cloud, &hull);
+
+  ASSERT_EQ(5, hull.size);
+
+  // Assert that p is in the hull
+  ASSERT_DOUBLE_EQ(0.0, hull.points[0].x);
+  ASSERT_DOUBLE_EQ(0.0, hull.points[0].y);
 }

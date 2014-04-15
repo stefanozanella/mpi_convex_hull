@@ -36,7 +36,19 @@ int main(int argc, const char **argv) {
   fclose(out);
 
   printf("Calculating convex hull for generated cloud.\n");
-  qsort(pc.points, pc.size, sizeof(point), &compare_point);
+  point_cloud hull;
+  convex_hull_graham_scan(&pc, &hull);
+
+  printf("Storing convex hull into %s\n", opts.hull_file);
+  FILE *hull_out;
+  if ((hull_out = fopen(opts.hull_file, "w")) == NULL) {
+    // TODO: Error handling
+    printf("Error opening file %s. Aborting.\n", opts.hull_file);
+    exit(EX_IOERR);
+  }
+
+  save_point_cloud(&hull, hull_out);
+  fclose(hull_out);
 
   return EX_OK;
 }

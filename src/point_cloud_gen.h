@@ -14,6 +14,7 @@ typedef struct {
   cloud_size_t cloud_size;
   point (*point_generator)(cloud_size_t index, cloud_size_t size);
   const char *dest_file;
+  const char *hull_file;
 } options;
 
 typedef struct {
@@ -28,6 +29,11 @@ typedef struct {
 int parse_args(int argc, const char **argv, options *opts);
 
 cloud_size_t parse_cloud_size(const char *num);
+
+/**
+ * Initializes a new point cloud with given max length
+ */
+void init_point_cloud(point_cloud *pc, int max_length);
 
 /**
  * Generates a pseudo-random point cloud.
@@ -49,4 +55,31 @@ void save_point_cloud(point_cloud *pc, FILE *out_stream);
  */
 int compare_point(const void *a, const void *b);
 
+/**
+ * Tells which direction a point r is with respect to the line passing between
+ * the two other points p and q.
+ */
+typedef enum {
+  TURN_RIGHT = -1,
+  TURN_NONE = 0,
+  TURN_LEFT = 1,
+} turn_t;
+
+turn_t turn(point p, point q, point r);
+
+/**
+ * Adds given point to an existing convex hull, discarding all points that
+ * fall inside the new convex hull. The function assumes that the point are
+ * ordered lexicographically.
+ */
+void update_hull(point_cloud *hull, point p);
+
+void push(point_cloud *hull, point p);
+void pop(point_cloud *hull);
+
+/**
+ * Calculates the convex hull of a given point cloud using the Graham's Scan
+ * algorithm.
+ */
+void convex_hull_graham_scan(point_cloud *cloud, point_cloud *hull);
 #endif
