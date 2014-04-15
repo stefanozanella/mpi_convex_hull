@@ -53,7 +53,7 @@ void generate_point_cloud(point_cloud *pc, options opts) {
   pc->points = (point*) malloc(pc->size * sizeof(point));
 
   for (int k = 0; k < pc->size; k++) {
-    pc->points[k] = opts.point_generator(k, 0);
+    pc->points[k] = opts.point_generator(k, pc->size);
   }
 }
 
@@ -111,6 +111,7 @@ void pop(point_cloud *hull) {
 
 void convex_hull_graham_scan(point_cloud *cloud, point_cloud *hull) {
   qsort(cloud->points, cloud->size, sizeof(point), &compare_point);
+
   init_point_cloud(hull, cloud->size);
 
   for (int k = 0; k < cloud->size; k++) {

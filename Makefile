@@ -32,12 +32,13 @@ ifeq ($(mpicc)$(mpcc),)
 endif
 
 CFLAGS = -std=c99
+CLIBS = -lm
 
 $(mpi_convex_hull_executable) : $(mpi_convex_hull_objects) $(bindir)
-	$(CC) $(CFLAGS) -o $(mpi_convex_hull_executable) $(mpi_convex_hull_objects)
+	$(CC) $(CFLAGS) -o $(mpi_convex_hull_executable) $(mpi_convex_hull_objects) $(CLIBS)
 
 $(generate_point_cloud_executable) : $(generate_point_cloud_objects) $(bindir)
-	$(CC) $(CFLAGS) -o $(generate_point_cloud_executable) $(generate_point_cloud_objects)
+	$(CC) $(CFLAGS) -o $(generate_point_cloud_executable) $(generate_point_cloud_objects) $(CLIBS)
 
 $(bindir) :
 	mkdir $(bindir)
@@ -65,6 +66,8 @@ gen_data: $(generate_point_cloud_executable)
 	-mkdir -p data
 	$(generate_point_cloud_executable) 123456 $(datadir)/cloud_123456.dat
 
+plot_data:
+	GNUTERM=x11 gnuplot -e "cloud='$(datadir)/cloud_123456.dat'; hull='$(datadir)/hull.dat'" ext/plot.plg
 # ###############
 # Testing harness
 # ###############
@@ -105,4 +108,4 @@ $(gmock_exec) : $(bindir) $(gtest_libs) $(gmock_libs) $(test_files) src/point_cl
 test : $(gmock_exec)
 	$(gmock_exec)
 
-.PHONY : all, clean, clear, run, submit, deploy, test, gen_data
+.PHONY : all, clean, clear, run, submit, deploy, test, gen_data, plot_data

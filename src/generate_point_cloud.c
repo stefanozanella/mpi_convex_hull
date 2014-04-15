@@ -2,11 +2,36 @@
 
 #include <stdlib.h>
 #include <sysexits.h>
+#include <math.h>
+#include <time.h>
 
+void init_cloud_generation() {
+  srand(time(NULL));
+}
+
+coord_t rand_coord(coord_t limit) {
+  coord_t safe_limit = limit == 0 ? 1l : limit;
+
+  return ((float) rand() / (float) RAND_MAX - 0.5) * safe_limit * 1e2;
+}
+
+point random_point(coord_t limit) {
+  return (point) { rand_coord(limit), rand_coord(limit) };
+}
+
+/*
+ * If we allow each point to be picked in the same range, as the number of
+ * points increase, the final shape will strongly resemble a square. Instead,
+ * if we partition the number of points so that each subset of points is picked
+ * from a range that is larger/smaller than the previous ones, we will obtain a
+ * more randomic shape. In particular, we'll have less chances to have
+ * collinear points on the convex hull, and its shape will be more fuzzy.
+ * To improve the fuzziness around the edges, we'll use a logarithmic function;
+ * the choice of the exact expression is rather customary and has been done on
+ * an inspection basis (looking at the final picture of the point cloud).
+ */
 point random_point_generator(cloud_size_t index, cloud_size_t size) {
-  point p = { 0, 0 };
-
-  return p;
+  return random_point(1.0 - log((1.0 + index/1e2) / (size/1e2)));
 }
 
 int main(int argc, const char **argv) {
@@ -21,6 +46,7 @@ int main(int argc, const char **argv) {
 
   printf("Generating point cloud of size: %ld\n", opts.cloud_size);
 
+  init_cloud_generation();
   point_cloud pc;
   generate_point_cloud(&pc, opts);
 

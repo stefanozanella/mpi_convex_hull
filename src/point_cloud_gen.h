@@ -74,6 +74,9 @@ turn_t turn(point p, point q, point r);
  */
 void update_hull(point_cloud *hull, point p);
 
+/**
+ * Utility functions that manipulate a point cloud as if it was a stack.
+ */
 void push(point_cloud *hull, point p);
 void pop(point_cloud *hull);
 
@@ -82,4 +85,5 @@ void pop(point_cloud *hull);
  * algorithm.
  */
 void convex_hull_graham_scan(point_cloud *cloud, point_cloud *hull);
+
 #endif
