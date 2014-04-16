@@ -64,10 +64,10 @@ deploy :
 
 gen_data: $(generate_point_cloud_executable)
 	-mkdir -p data
-	$(generate_point_cloud_executable) 123456 $(datadir)/cloud_123456.dat
+	$(generate_point_cloud_executable) 1000000 $(datadir)/cloud.dat $(datadir)/hull.dat
 
 plot_data:
-	GNUTERM=x11 gnuplot -e "cloud='$(datadir)/cloud_123456.dat'; hull='$(datadir)/hull.dat'" ext/plot.plg
+	GNUTERM=x11 gnuplot -e "cloud='$(datadir)/cloud.dat'; hull='$(datadir)/hull.dat'" ext/plot.plg
 # ###############
 # Testing harness
 # ###############
