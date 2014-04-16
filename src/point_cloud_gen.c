@@ -61,7 +61,7 @@ void save_point_cloud(point_cloud *pc, FILE *out_stream) {
   fprintf(out_stream, "# size=%ld\n", pc->size);
 
   for (int k = 0; k < pc->size; k++) {
-    fprintf(out_stream, "%.5f\t%.5f\n", pc->points[k].x, pc->points[k].y);
+    fprintf(out_stream, "%ld\t%ld\n", pc->points[k].x, pc->points[k].y);
   }
 }
 
@@ -73,9 +73,8 @@ int compare_point(const void *ptr_a, const void *ptr_b) {
   point a = *(point *)ptr_a;
   point b = *(point *)ptr_b;
 
-  int dx = ((int)(a.x * 1e5)) - ((int)(b.x * 1e5));
-
-  return dx != 0 ? dx : ((int)(a.y * 1e5)) - ((int)(b.y * 1e5));
+  coord_t dx = a.x - b.x;
+  return dx ? dx : a.y - b.y;
 }
 
 turn_t turn(point p, point q, point r) {
@@ -91,6 +90,9 @@ turn_t turn(point p, point q, point r) {
     signbit(measure) ? TURN_RIGHT : TURN_LEFT;
 }
 
+// NOTE: This could also be implemented by swapping values instead of using a
+// stack, so that in the end the first H values of the original cloud represent
+// the hull. This should allow for less memory consumption.
 void update_hull(point_cloud *hull, point p) {
   while (hull->size > 1 &&
       turn(hull->points[hull->size - 2], hull->points[hull->size - 1], p) != TURN_LEFT) {
@@ -112,13 +114,13 @@ void pop(point_cloud *hull) {
 void convex_hull_graham_scan(point_cloud *cloud, point_cloud *hull) {
   qsort(cloud->points, cloud->size, sizeof(point), &compare_point);
 
-  init_point_cloud(hull, cloud->size);
+  init_point_cloud(hull, cloud->size + 1);
 
   for (int k = 0; k < cloud->size; k++) {
     update_hull(hull, cloud->points[k]);
   }
 
-  for (int k = cloud->size - 2; k > 0; k--) {
+  for (int k = cloud->size - 1; k >= 0; k--) {
     update_hull(hull, cloud->points[k]);
   }
 }

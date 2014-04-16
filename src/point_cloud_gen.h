@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 typedef unsigned long cloud_size_t;
-typedef double coord_t;
+typedef long coord_t;
 
 typedef struct {
   coord_t x, y;

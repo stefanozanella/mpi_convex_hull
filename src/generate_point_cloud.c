@@ -12,7 +12,7 @@ void init_cloud_generation() {
 coord_t rand_coord(coord_t limit) {
   coord_t safe_limit = limit == 0 ? 1l : limit;
 
-  return ((float) rand() / (float) RAND_MAX - 0.5) * safe_limit * 1e2;
+  return ((float) rand() / (float) RAND_MAX - 0.5) * safe_limit * 1e7;
 }
 
 point random_point(coord_t limit) {
