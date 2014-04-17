@@ -67,7 +67,7 @@ gen_data: $(generate_point_cloud_executable)
 	$(generate_point_cloud_executable) 1000000 $(datadir)/cloud.dat $(datadir)/hull.dat
 
 plot_data:
-	GNUTERM=x11 gnuplot -e "cloud='$(datadir)/cloud.dat'; hull='$(datadir)/hull.dat'" ext/plot.plg
+	GNUTERM=x11 gnuplot -e "cloud='$(datadir)/cloud.dat'; hull='$(datadir)/hull.dat'" ext/gnuplot.plg
 # ###############
 # Testing harness
 # ###############

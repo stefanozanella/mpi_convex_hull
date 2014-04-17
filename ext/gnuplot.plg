@@ -1,0 +1,4 @@
+set object 1 rectangle from screen 0,0 to screen 1,1 fillcolor rgb "#F4F8FC" behind
+set offset graph 0.04, graph 0.04, graph 0.02, graph 0.02 
+plot cloud title 'Point cloud' lt rgb "#A2E817", hull title 'Convex hull' with linespoints lt rgb "#B717E8" lw 1 
+pause -1
