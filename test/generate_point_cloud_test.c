@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
-#include "point_cloud_gen.h"
+#include "generate_point_cloud.h"
+#include "point_cloud_io.h"
+#include "convex_hull.h"
 
 TEST(parse_cloud_size, returns_the_integral_representation_of_given_string) {
   ASSERT_EQ(cloud_size_t(123456), parse_cloud_size("123456"));

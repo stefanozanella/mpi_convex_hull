@@ -3,12 +3,12 @@
 CPUS = 4
 JOBFILE = jobs/mpi_convex_hull.job
 
-libs_objects = src/point_cloud_gen.o
+libs_objects = src/generate_point_cloud.o src/point_cloud.o src/point_cloud_io.o src/convex_hull.o
 
-mpi_convex_hull_objects = src/mpi_convex_hull.o
+mpi_convex_hull_objects = src/mpi_convex_hull_main.o
 mpi_convex_hull_executable = $(bindir)/mpi_convex_hull
 
-generate_point_cloud_objects = src/generate_point_cloud.o $(libs_objects)
+generate_point_cloud_objects = src/generate_point_cloud_main.o $(libs_objects)
 generate_point_cloud_executable = $(bindir)/generate_point_cloud
 
 bindir = bin
