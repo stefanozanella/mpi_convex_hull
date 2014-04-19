@@ -1,6 +1,6 @@
 # vim: noexpandtab
 
-test_files = test/*_test.c $(libs_objects:.o=.c)
+test_files = test/*_test.c $(libs_objects:.o=.c) test/test_helper.c
 
 tmp_dir = tmp
 
