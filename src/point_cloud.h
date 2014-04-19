@@ -20,9 +20,9 @@ typedef struct {
 } point_cloud;
 
 /**
- * Initializes a new point cloud with given max length
+ * Initializes an empty new point cloud of `size` points with given max length
  */
-void init_point_cloud(point_cloud *pc, int max_length);
+void init_point_cloud(point_cloud *pc, cloud_size_t size, cloud_size_t max_length);
 
 /**
  * Compares two points lexicographically

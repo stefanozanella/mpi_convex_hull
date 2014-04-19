@@ -42,8 +42,7 @@ void print_usage(const char *prog_name, FILE *outstream) {
 }
 
 void generate_point_cloud(point_cloud *pc, options opts) {
-  pc->size = opts.cloud_size;
-  pc->points = (point*) malloc(pc->size * sizeof(point));
+  init_point_cloud(pc, opts.cloud_size, opts.cloud_size);
 
   for (cloud_size_t k = 0; k < pc->size; k++) {
     pc->points[k] = opts.point_generator(k, pc->size);

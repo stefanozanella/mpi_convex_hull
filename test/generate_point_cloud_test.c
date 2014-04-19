@@ -203,7 +203,7 @@ TEST(update_hull, just_adds_given_point_when_the_hull_is_empty) {
   point_cloud hull;
   point p = { 10, 20 };
 
-  init_point_cloud(&hull, 2);
+  init_point_cloud(&hull, 0, 2);
 
   ASSERT_EQ(0, hull.size);
 
@@ -219,7 +219,7 @@ TEST(update_hull, just_adds_given_point_when_the_hull_has_a_single_point) {
   point p = { 0, 10 };
   point q = { 10, 20 };
 
-  init_point_cloud(&hull, 2);
+  init_point_cloud(&hull, 0, 2);
   push(&hull, p);
 
   update_hull(&hull, q);
@@ -235,7 +235,7 @@ TEST(update_hull, discards_point_in_the_hull_that_correspond_to_right_turns) {
   point q = { 10, 10 };
   point r = { 20, 5 };
 
-  init_point_cloud(&hull, 3);
+  init_point_cloud(&hull, 0, 3);
   push(&hull, p);
   push(&hull, q);
 
@@ -258,7 +258,7 @@ TEST(update_hull, just_adds_given_point_if_it_makes_a_left_turn_with_the_latest_
   point q = { 10, -10 };
   point r = { 20, 30 };
 
-  init_point_cloud(&hull, 3);
+  init_point_cloud(&hull, 0, 3);
   push(&hull, p);
   push(&hull, q);
 
@@ -287,7 +287,7 @@ TEST(update_hull, can_start_comparisons_from_an_arbitrary_point_in_the_hull) {
   point s = { 10, 35 };
   point t = { 5, 20 };
 
-  init_point_cloud(&hull, 5);
+  init_point_cloud(&hull, 0, 5);
   push(&hull, p);
   push(&hull, q);
   push(&hull, r);
@@ -320,8 +320,8 @@ TEST(update_hull, can_start_comparisons_from_an_arbitrary_point_in_the_hull) {
 
 TEST(convex_hull_graham_scan, calculates_the_convex_hull_of_a_given_cloud) {
   point_cloud hull, cloud;
-  init_point_cloud(&cloud, 10);
-  init_point_cloud(&hull, 10);
+  init_point_cloud(&cloud, 0, 10);
+  init_point_cloud(&hull, 0, 10);
 
   // Convex hull
   push(&cloud, (point){ 0, 0 });

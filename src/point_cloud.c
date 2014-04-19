@@ -2,8 +2,8 @@
 
 #include <stdlib.h>
 
-void init_point_cloud(point_cloud *pc, int max_length) {
-  pc->size = 0;
+void init_point_cloud(point_cloud *pc, cloud_size_t size, cloud_size_t max_length) {
+  pc->size = size;
   pc->points = (point*) malloc(max_length * sizeof(point));
 }
 
