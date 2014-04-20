@@ -3,12 +3,14 @@
 CPUS = 4
 JOBFILE = jobs/mpi_convex_hull.job
 
-libs_objects = src/generate_point_cloud.o src/point_cloud.o src/point_cloud_io.o src/convex_hull.o
+common_libs_objects = src/point_cloud.o src/point_cloud_io.o src/convex_hull.o
 
-mpi_convex_hull_objects = src/mpi_convex_hull_main.o
+mpi_convex_hull_libs_objects = src/mpi_convex_hull.o
+mpi_convex_hull_objects = src/mpi_convex_hull_main.o $(mpi_convex_hull_libs_objects) $(common_libs_objects)
 mpi_convex_hull_executable = $(bindir)/mpi_convex_hull
 
-generate_point_cloud_objects = src/generate_point_cloud_main.o $(libs_objects)
+generate_point_cloud_libs_objects = src/generate_point_cloud.o
+generate_point_cloud_objects = src/generate_point_cloud_main.o $(generate_point_cloud_libs_objects) $(common_libs_objects)
 generate_point_cloud_executable = $(bindir)/generate_point_cloud
 
 bindir = bin
@@ -47,14 +49,13 @@ $(bindir) :
 all : $(mpi_convex_hull_executable) $(generate_point_cloud_executable)
 
 clean :
-	-rm $(mpi_convex_hull_objects) $(mpi_convex_hull_executable) \
-		$(generate_point_cloud_objects) $(generate_point_cloud_executable)
+	-rm src/*.o bin/*
 
 clear : clean
 	-rm -rf $(rundir) $(datadir)
 
 run :
-	mpirun -np $(CPUS) $(mpi_convex_hull_executable)
+	mpirun -np $(CPUS) $(mpi_convex_hull_executable) $(datadir)/cloud.dat
 
 submit : $(mpi_convex_hull_executable)
 	-mkdir -p $(rundir)

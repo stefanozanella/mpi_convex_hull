@@ -47,3 +47,35 @@ TEST(save_point_cloud, serializes_a_point_cloud_by_writing_each_point_on_a_separ
 
   fclose(out_stream);
 }
+
+TEST(load_point_cloud, reads_a_point_cloud_by_parsing_the_header_and_setting_the_correct_cloud_size) {
+  FILE *in_stream = tmpfile();
+  fprintf(in_stream, "# size=3\n");
+  fprintf(in_stream, "12345\t67890\n");
+  fprintf(in_stream, "45678\t90123\n");
+  fprintf(in_stream, "86793\t57364\n");
+  rewind(in_stream);
+
+  point_cloud test_cloud;
+  load_point_cloud(in_stream, &test_cloud);
+
+  ASSERT_EQ(cloud_size_t(3), test_cloud.size);
+}
+
+TEST(load_point_cloud, reads_a_point_cloud_by_storing_all_the_points) {
+  FILE *in_stream = tmpfile();
+  fprintf(in_stream, "# size=3\n");
+  fprintf(in_stream, "12345\t67890\n");
+  fprintf(in_stream, "45678\t90123\n");
+  fprintf(in_stream, "86793\t57364\n");
+  rewind(in_stream);
+
+  point_cloud test_cloud;
+  load_point_cloud(in_stream, &test_cloud);
+
+  ASSERT_EQ(coord_t(12345), test_cloud.points[0].x);
+  ASSERT_EQ(coord_t(67890), test_cloud.points[0].y);
+
+  ASSERT_EQ(coord_t(86793), test_cloud.points[2].x);
+  ASSERT_EQ(coord_t(57364), test_cloud.points[2].y);
+}

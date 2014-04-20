@@ -1,6 +1,7 @@
 # vim: noexpandtab
 
-test_files = test/*_test.c $(libs_objects:.o=.c) test/test_helper.c
+tested_libs = $(common_libs_objects) $(mpi_convex_hull_libs_objects) $(generate_point_cloud_libs_objects)
+test_files = test/*_test.c $(tested_libs:.o=.c) test/test_helper.c
 
 tmp_dir = tmp
 
@@ -31,7 +32,7 @@ $(gmock_libs) $(gtest_libs): $(gmock_dir)
 	cd $(gmock_build_dir) && cmake .. && make
 
 $(gmock_exec) : $(bindir) $(gtest_libs) $(gmock_libs) $(test_files)
-	g++ -I$(gtest_include_dir) -I$(gmock_include_dir) -I$(srcdir)\
+	mpic++ -I$(gtest_include_dir) -I$(gmock_include_dir) -I$(srcdir)\
 		-L$(gtest_build_dir) -L$(gmock_build_dir) $(gmock_main)\
 		$(test_files) -lgmock -lgtest -lpthread -o $(gmock_exec)
 
