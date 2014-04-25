@@ -73,12 +73,15 @@ int convex_hull_master(int argc, char const **argv, int rank, int cpu_count) {
 
   printf(ANSI_COLOR_GREEN "==> master: Found leftmost point: (%ld, %ld)\n" ANSI_COLOR_RESET, final_hull.points[0].x, final_hull.points[0].y);
 
-  point *q = find_right_tangent(&sub_hull, &(final_hull.points[0]));
-  printf(ANSI_COLOR_WHITE "==> master: Found local next point in hull: (%ld, %ld)\n" ANSI_COLOR_RESET, (*q).x, (*q).y);
+  point p = final_hull.points[0];
+  do {
+    point *q = find_right_tangent(&sub_hull, &p);
+    //find_next_point_in_hull(q, &(final_hull.points[0]), &(final_hull.points[1]));
+    find_next_point_in_hull(q, &p, &p);
 
-  find_next_point_in_hull(q, &(final_hull.points[0]), &(final_hull.points[1]));
-
-  printf(ANSI_COLOR_GREEN "==> master: Found next point in hull: (%ld, %ld)\n" ANSI_COLOR_RESET, final_hull.points[1].x, final_hull.points[1].y);
+    //printf(ANSI_COLOR_GREEN "==> master: Found next point in hull: (%ld, %ld)\n" ANSI_COLOR_RESET, final_hull.points[1].x, final_hull.points[1].y);
+    printf(ANSI_COLOR_GREEN "==> master: Found next point in hull: (%ld, %ld)\n" ANSI_COLOR_RESET, p.x, p.y);
+  } while (compare_point(&p, &(final_hull.points[0])));
 
   return EX_OK;
 }
@@ -100,15 +103,17 @@ int convex_hull_slave(int argc, char const **argv, int rank, int cpu_count) {
   point_cloud sub_hull;
   convex_hull_graham_scan(&sub_cloud, &sub_hull);
 
-  point p;
-  find_leftmost(&(sub_hull.points[0]), &p);
-  printf(ANSI_COLOR_YELLOW "==> slave %d: Found leftmost point: (%ld, %ld)\n" ANSI_COLOR_RESET, rank, p.x, p.y);
+  point first_in_hull;
+  find_leftmost(&(sub_hull.points[0]), &first_in_hull);
 
+  printf(ANSI_COLOR_YELLOW "==> slave %d: Found leftmost point: (%ld, %ld)\n" ANSI_COLOR_RESET, rank, first_in_hull.x, first_in_hull.y);
+
+  point p = first_in_hull;
+  do {
   point *q = find_right_tangent(&sub_hull, &p);
-  printf(ANSI_COLOR_WHITE "==> slave %d: Found local next point in hull: (%ld, %ld)\n" ANSI_COLOR_RESET, rank, (*q).x, (*q).y);
-
   find_next_point_in_hull(q, &p, &p);
-  printf(ANSI_COLOR_GREEN "==> slave %d: Found next point in hull: (%ld, %ld)\n" ANSI_COLOR_RESET, rank, p.x, p.y);
+  printf(ANSI_COLOR_YELLOW "==> slave %d: Found next point in hull: (%ld, %ld)\n" ANSI_COLOR_RESET, rank, p.x, p.y);
+  } while (compare_point(&p, &first_in_hull));
 
   return EX_OK;
 }
@@ -206,8 +211,6 @@ void mpi_max_angle_op(void *invec, void *inoutvec, int *len, MPI_Datatype *type)
   /* TODO: This might be optimized by inlining the cast */
   point* in = (point*) invec;
   point* inout = (point*) inoutvec;
-
-  //printf("Comparing: (%ld, %ld) - (%ld, %ld) - (%ld, %ld)\n", last_point_in_hull.x, last_point_in_hull.y, in[0].x, in[0].y, inout[0].x, inout[0].y);
 
   turn_t measure = turn(last_point_in_hull, inout[0], in[0]);
   if (measure == TURN_RIGHT || (measure == TURN_NONE && dist(last_point_in_hull, in[0]) > dist(last_point_in_hull, inout[0]))) {
