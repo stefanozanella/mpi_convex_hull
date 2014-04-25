@@ -25,9 +25,20 @@ typedef struct {
 void init_point_cloud(point_cloud *pc, cloud_size_t size, cloud_size_t max_length);
 
 /**
+ * Initializes a "void" point cloud, meaning that it has given size but it points
+ * to NULL
+ */
+void init_void_point_cloud(point_cloud *pc, cloud_size_t size);
+
+/**
  * Compares two points lexicographically
  */
 int compare_point(const void *a, const void *b);
+
+/**
+ * Returns the distance between two points
+ */
+coord_t dist(point a, point b);
 
 /**
  * Utility functions that manipulate a point cloud as if it was a stack.

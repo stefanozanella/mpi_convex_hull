@@ -12,4 +12,4 @@
 #@ total_tasks = 4
 #@ queue
 
-bin/mpi_convex_hull
+bin/mpi_convex_hull data/cloud.dat

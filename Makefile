@@ -62,7 +62,7 @@ submit : $(mpi_convex_hull_executable)
 	llsubmit $(JOBFILE)
 
 deploy :
-	rsync -aPv . splab:mpi_convex_hull --exclude="*.sw[po]" --exclude="tmp" --exclude="bin"
+	rsync -aPv . splab:mpi_convex_hull --exclude="*.sw[po]" --exclude="*.o" --exclude="tmp" --exclude="bin"
 
 gen_data: $(generate_point_cloud_executable)
 	-mkdir -p data

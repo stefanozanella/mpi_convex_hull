@@ -6,8 +6,8 @@ cloud_size_t parse_cloud_size(const char *num) {
   char *end;
   cloud_size_t ret = strtoul(num, &end, 10);
 
-  // TODO: Error handling
-  // TODO: If negative, errno == ERANGE
+  /* TODO: Error handling */
+  /* TODO: If negative, errno == ERANGE */
   if (end != NULL && end[0] != '\0') {
     ret = 0;
   }
@@ -30,7 +30,7 @@ int parse_args(int argc, const char **argv, options *opts) {
     opts->hull_file = "data/hull.dat";
   }
 
-  // TODO: Error handling
+  /* TODO: Error handling */
 
   return 0;
 }

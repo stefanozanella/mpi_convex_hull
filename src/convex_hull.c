@@ -15,7 +15,7 @@ void update_hull(point_cloud *hull, point p) {
     pop(hull);
   }
 
-  // NOTE: Here we are allowing a point to appear more than once in the cloud
+  /* NOTE: Here we are allowing a point to appear more than once in the cloud */
   push(hull, p);
 }
 
@@ -28,9 +28,10 @@ void convex_hull_graham_scan(point_cloud *cloud, point_cloud *hull) {
     update_hull(hull, cloud->points[k]);
   }
 
-  // Since cloud_size_t is unsigned, we must shift the looped range by +1, then
-  // compensating the offset in the actual indexing (since k >= 0 would always
-  // be true)
+  /* Since cloud_size_t is unsigned, we must shift the looped range by +1, then
+   * compensating the offset in the actual indexing (since k >= 0 would always
+   * be true)
+   */
   for (cloud_size_t k = cloud->size ; k > 0; k--) {
     update_hull(hull, cloud->points[k-1]);
   }

@@ -56,7 +56,7 @@ int main(int argc, const char **argv) {
   printf("Storing point cloud into %s\n", opts.dest_file);
   FILE *out;
   if ((out = fopen(opts.dest_file, "w")) == NULL) {
-    // TODO: Error handling
+    /* TODO: Error handling */
     printf("Error opening file %s. Aborting.\n", opts.dest_file);
     exit(EX_IOERR);
   }
@@ -71,7 +71,7 @@ int main(int argc, const char **argv) {
   printf("Storing convex hull into %s\n", opts.hull_file);
   FILE *hull_out;
   if ((hull_out = fopen(opts.hull_file, "w")) == NULL) {
-    // TODO: Error handling
+    /* TODO: Error handling */
     printf("Error opening file %s. Aborting.\n", opts.hull_file);
     exit(EX_IOERR);
   }
