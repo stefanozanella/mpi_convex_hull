@@ -35,4 +35,7 @@ void convex_hull_graham_scan(point_cloud *cloud, point_cloud *hull) {
   for (cloud_size_t k = cloud->size ; k > 0; k--) {
     update_hull(hull, cloud->points[k-1]);
   }
+
+  /* Here we drop the last point in hull, which is the same as the first */
+  pop(hull);
 }

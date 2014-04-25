@@ -170,10 +170,7 @@ TEST(convex_hull_graham_scan, calculates_the_convex_hull_of_a_given_cloud) {
 
   convex_hull_graham_scan(&cloud, &hull);
 
-  // We save the first point twice both at the start and at the end of the
-  // hull. This gives a nice way to visualize the hull in gnuplot with as a
-  // complete poloygon.
-  EXPECT_EQ(6, hull.size);
+  EXPECT_EQ(5, hull.size);
 
   EXPECT_EQ(0, hull.points[0].x);
   EXPECT_EQ(0, hull.points[0].y);

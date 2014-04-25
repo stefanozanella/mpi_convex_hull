@@ -6,6 +6,11 @@ void save_point_cloud(point_cloud *pc, FILE *out_stream) {
   for (cloud_size_t k = 0; k < pc->size; k++) {
     fprintf(out_stream, POINT_FMT, pc->points[k].x, pc->points[k].y);
   }
+
+  /* Here we replicate the first point so that we can plot a closed polyline in
+   * Gnuplot. This last point is actually ignored when reading it back
+   */
+  fprintf(out_stream, POINT_FMT, pc->points[0].x, pc->points[0].y);
 }
 
 void load_point_cloud(FILE *in_stream, point_cloud *pc) {

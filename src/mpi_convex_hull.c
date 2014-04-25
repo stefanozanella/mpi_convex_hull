@@ -151,11 +151,11 @@ point *find_right_tangent(point_cloud *cloud, point *reference) {
 
     if ((pivot_prev != TURN_RIGHT) && (pivot_next != TURN_RIGHT)) {
       return &cloud->points[pivot];
-    } else if (((pivot_side == TURN_LEFT) && (start_next == TURN_RIGHT || start_prev == start_next)) || (pivot_side == TURN_RIGHT && pivot_prev == TURN_RIGHT)) {
+    } else if ((pivot_side == TURN_LEFT && start_next == TURN_RIGHT) || (start_prev == start_next) || (pivot_side == TURN_RIGHT && pivot_prev == TURN_RIGHT)) {
       end = pivot;
     } else {
       start = pivot + 1;
-      start_prev = - pivot_next;
+      start_prev = (turn_t) - pivot_next;
       start_next = turn(*reference, cloud->points[start], cloud->points[(start + 1) % cloud->size]);
     }
   }
