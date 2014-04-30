@@ -66,6 +66,29 @@ int convex_hull_master(int argc, char const **argv, int rank, int cpu_count) {
   point_cloud sub_hull;
   convex_hull_graham_scan(&sub_cloud, &sub_hull);
 
+  /* DEBUG */
+  FILE *sub_cloud_out;
+  char sub_cloud_file[256];
+  FILE *sub_hull_out;
+  char sub_hull_file[256];
+  sprintf(sub_hull_file, "data/sub_hull_%d.dat", rank);
+  sprintf(sub_cloud_file, "data/sub_cloud_%d.dat", rank);
+  if ((sub_hull_out = fopen(sub_hull_file, "w")) == NULL) {
+    /* TODO: Error handling */
+    printf("Error opening file %s. Aborting.\n", sub_hull_file);
+    return EX_IOERR;
+  }
+  if ((sub_cloud_out = fopen(sub_cloud_file, "w")) == NULL) {
+    /* TODO: Error handling */
+    printf("Error opening file %s. Aborting.\n", sub_cloud_file);
+    return EX_IOERR;
+  }
+  save_point_cloud(&sub_hull, sub_hull_out);
+  save_point_cloud(&sub_cloud, sub_cloud_out);
+  fclose(sub_hull_out);
+  fclose(sub_cloud_out);
+  /* DEBUG */
+
   point_cloud final_hull;
   init_point_cloud(&final_hull, 0, input_cloud.size);
 
@@ -73,15 +96,18 @@ int convex_hull_master(int argc, char const **argv, int rank, int cpu_count) {
 
   printf(ANSI_COLOR_GREEN "==> master: Found leftmost point: (%ld, %ld)\n" ANSI_COLOR_RESET, final_hull.points[0].x, final_hull.points[0].y);
 
-  point p = final_hull.points[0];
+  int k = 0;
   do {
-    point *q = find_right_tangent(&sub_hull, &p);
-    //find_next_point_in_hull(q, &(final_hull.points[0]), &(final_hull.points[1]));
-    find_next_point_in_hull(q, &p, &p);
+    point *q = find_right_tangent(&sub_hull, &(final_hull.points[k]));
+    find_next_point_in_hull(q, &(final_hull.points[k]), &(final_hull.points[k+1]));
+    k++;
 
-    //printf(ANSI_COLOR_GREEN "==> master: Found next point in hull: (%ld, %ld)\n" ANSI_COLOR_RESET, final_hull.points[1].x, final_hull.points[1].y);
-    printf(ANSI_COLOR_GREEN "==> master: Found next point in hull: (%ld, %ld)\n" ANSI_COLOR_RESET, p.x, p.y);
-  } while (compare_point(&p, &(final_hull.points[0])));
+    printf(ANSI_COLOR_GREEN "==> master: Found next point in hull: (%ld, %ld)\n" ANSI_COLOR_RESET, final_hull.points[k].x, final_hull.points[k].y);
+  } while (compare_point(&(final_hull.points[k]), &(final_hull.points[0])));
+
+  /* The last point is equal to the first one, so we delete it from the final
+   * hull */
+  pop(&final_hull);
 
   return EX_OK;
 }
@@ -103,6 +129,29 @@ int convex_hull_slave(int argc, char const **argv, int rank, int cpu_count) {
   point_cloud sub_hull;
   convex_hull_graham_scan(&sub_cloud, &sub_hull);
 
+  /* DEBUG */
+  FILE *sub_cloud_out;
+  char sub_cloud_file[256];
+  FILE *sub_hull_out;
+  char sub_hull_file[256];
+  sprintf(sub_hull_file, "data/sub_hull_%d.dat", rank);
+  sprintf(sub_cloud_file, "data/sub_cloud_%d.dat", rank);
+  if ((sub_hull_out = fopen(sub_hull_file, "w")) == NULL) {
+    /* TODO: Error handling */
+    printf("Error opening file %s. Aborting.\n", sub_hull_file);
+    return EX_IOERR;
+  }
+  if ((sub_cloud_out = fopen(sub_cloud_file, "w")) == NULL) {
+    /* TODO: Error handling */
+    printf("Error opening file %s. Aborting.\n", sub_cloud_file);
+    return EX_IOERR;
+  }
+  save_point_cloud(&sub_hull, sub_hull_out);
+  save_point_cloud(&sub_cloud, sub_cloud_out);
+  fclose(sub_hull_out);
+  fclose(sub_cloud_out);
+  /* DEBUG */
+
   point first_in_hull;
   find_leftmost(&(sub_hull.points[0]), &first_in_hull);
 
@@ -112,7 +161,7 @@ int convex_hull_slave(int argc, char const **argv, int rank, int cpu_count) {
   do {
   point *q = find_right_tangent(&sub_hull, &p);
   find_next_point_in_hull(q, &p, &p);
-  printf(ANSI_COLOR_YELLOW "==> slave %d: Found next point in hull: (%ld, %ld)\n" ANSI_COLOR_RESET, rank, p.x, p.y);
+  //printf(ANSI_COLOR_YELLOW "==> slave %d: Found next point in hull: (%ld, %ld)\n" ANSI_COLOR_RESET, rank, p.x, p.y);
   } while (compare_point(&p, &first_in_hull));
 
   return EX_OK;
@@ -141,6 +190,8 @@ void find_leftmost(point *local_point, point *leftmost) {
  * performance
  */
 point *find_right_tangent(point_cloud *cloud, point *reference) {
+  //printf("\tcurrent reference point: (%ld, %ld)\n", reference->x, reference->y);
+
   cloud_size_t start = 0;
   cloud_size_t end = cloud->size;
 
@@ -148,6 +199,7 @@ point *find_right_tangent(point_cloud *cloud, point *reference) {
   turn_t start_next = turn(*reference, cloud->points[start], cloud->points[(start + 1) % end]);
 
   while (start < end) {
+    //printf("\tsearching in range %ld .. %ld\n", start, end);
     cloud_size_t pivot = (start + end) / 2;
     turn_t pivot_prev = turn(*reference, cloud->points[pivot], cloud->points[(pivot - 1) % cloud->size]);
     turn_t pivot_next = turn(*reference, cloud->points[pivot], cloud->points[(pivot + 1) % cloud->size]);
@@ -155,7 +207,9 @@ point *find_right_tangent(point_cloud *cloud, point *reference) {
     turn_t pivot_side = turn(*reference, cloud->points[start], cloud->points[pivot]);
 
     if ((pivot_prev != TURN_RIGHT) && (pivot_next != TURN_RIGHT)) {
-      return &cloud->points[pivot];
+      //return &cloud->points[pivot];
+      start = pivot;
+      break;
     } else if ((pivot_side == TURN_LEFT && start_next == TURN_RIGHT) || (start_prev == start_next) || (pivot_side == TURN_RIGHT && pivot_prev == TURN_RIGHT)) {
       end = pivot;
     } else {
@@ -164,6 +218,12 @@ point *find_right_tangent(point_cloud *cloud, point *reference) {
       start_next = turn(*reference, cloud->points[start], cloud->points[(start + 1) % cloud->size]);
     }
   }
+
+  if (!compare_point(&cloud->points[start], reference)) {
+    start++;
+  }
+
+  //printf("\treturning point at index %ld: (%ld, %ld)\n", start, cloud->points[start].x, cloud->points[start].y);
 
   return &cloud->points[start];
 }
