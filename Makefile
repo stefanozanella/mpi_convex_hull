@@ -51,11 +51,14 @@ all : $(mpi_convex_hull_executable) $(generate_point_cloud_executable)
 clean :
 	-rm src/*.o bin/*
 
+clean_data :
+	-rm data/*
+
 clear : clean
 	-rm -rf $(rundir) $(datadir)
 
 run :
-	mpirun -np $(CPUS) $(mpi_convex_hull_executable) $(datadir)/cloud.dat
+	mpirun -np $(CPUS) $(mpi_convex_hull_executable) $(datadir)/cloud.dat $(datadir)/hull.dat
 
 submit : $(mpi_convex_hull_executable)
 	-mkdir -p $(rundir)
@@ -66,7 +69,7 @@ deploy :
 
 gen_data: $(generate_point_cloud_executable)
 	-mkdir -p data
-	$(generate_point_cloud_executable) 1000000 $(datadir)/cloud.dat $(datadir)/hull.dat
+	$(generate_point_cloud_executable) 1000000 $(datadir)/cloud.dat $(datadir)/reference_hull.dat
 
 plot_data:
 	GNUTERM=x11 gnuplot -e "cloud='$(datadir)/cloud.dat'; hull='$(datadir)/hull.dat'" ext/gnuplot.plg

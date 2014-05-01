@@ -39,7 +39,7 @@ int mpi_convex_hull(int argc, char const **argv) {
 }
 
 int convex_hull_master(int argc, char const **argv, int rank, int cpu_count) {
-  if (argc < 2) {
+  if (argc < 3) {
     print_usage(argv[0]);
     return EX_USAGE;
   }
@@ -66,29 +66,6 @@ int convex_hull_master(int argc, char const **argv, int rank, int cpu_count) {
   point_cloud sub_hull;
   convex_hull_graham_scan(&sub_cloud, &sub_hull);
 
-  /* DEBUG */
-  FILE *sub_cloud_out;
-  char sub_cloud_file[256];
-  FILE *sub_hull_out;
-  char sub_hull_file[256];
-  sprintf(sub_hull_file, "data/sub_hull_%d.dat", rank);
-  sprintf(sub_cloud_file, "data/sub_cloud_%d.dat", rank);
-  if ((sub_hull_out = fopen(sub_hull_file, "w")) == NULL) {
-    /* TODO: Error handling */
-    printf("Error opening file %s. Aborting.\n", sub_hull_file);
-    return EX_IOERR;
-  }
-  if ((sub_cloud_out = fopen(sub_cloud_file, "w")) == NULL) {
-    /* TODO: Error handling */
-    printf("Error opening file %s. Aborting.\n", sub_cloud_file);
-    return EX_IOERR;
-  }
-  save_point_cloud(&sub_hull, sub_hull_out);
-  save_point_cloud(&sub_cloud, sub_cloud_out);
-  fclose(sub_hull_out);
-  fclose(sub_cloud_out);
-  /* DEBUG */
-
   point_cloud final_hull;
   init_point_cloud(&final_hull, 0, input_cloud.size);
 
@@ -107,7 +84,17 @@ int convex_hull_master(int argc, char const **argv, int rank, int cpu_count) {
 
   /* The last point is equal to the first one, so we delete it from the final
    * hull */
-  pop(&final_hull);
+  final_hull.size = k;
+
+  const char *output_filename = argv[2];
+  FILE *hull_out;
+  if ((hull_out = fopen(output_filename, "w")) == NULL) {
+    /* TODO: Error handling */
+    printf("Error opening file %s. Aborting.\n", output_filename);
+    return EX_IOERR;
+  }
+  save_point_cloud(&final_hull, hull_out);
+  fclose(hull_out);
 
   return EX_OK;
 }
@@ -129,39 +116,13 @@ int convex_hull_slave(int argc, char const **argv, int rank, int cpu_count) {
   point_cloud sub_hull;
   convex_hull_graham_scan(&sub_cloud, &sub_hull);
 
-  /* DEBUG */
-  FILE *sub_cloud_out;
-  char sub_cloud_file[256];
-  FILE *sub_hull_out;
-  char sub_hull_file[256];
-  sprintf(sub_hull_file, "data/sub_hull_%d.dat", rank);
-  sprintf(sub_cloud_file, "data/sub_cloud_%d.dat", rank);
-  if ((sub_hull_out = fopen(sub_hull_file, "w")) == NULL) {
-    /* TODO: Error handling */
-    printf("Error opening file %s. Aborting.\n", sub_hull_file);
-    return EX_IOERR;
-  }
-  if ((sub_cloud_out = fopen(sub_cloud_file, "w")) == NULL) {
-    /* TODO: Error handling */
-    printf("Error opening file %s. Aborting.\n", sub_cloud_file);
-    return EX_IOERR;
-  }
-  save_point_cloud(&sub_hull, sub_hull_out);
-  save_point_cloud(&sub_cloud, sub_cloud_out);
-  fclose(sub_hull_out);
-  fclose(sub_cloud_out);
-  /* DEBUG */
-
   point first_in_hull;
   find_leftmost(&(sub_hull.points[0]), &first_in_hull);
 
-  printf(ANSI_COLOR_YELLOW "==> slave %d: Found leftmost point: (%ld, %ld)\n" ANSI_COLOR_RESET, rank, first_in_hull.x, first_in_hull.y);
-
   point p = first_in_hull;
   do {
-  point *q = find_right_tangent(&sub_hull, &p);
-  find_next_point_in_hull(q, &p, &p);
-  //printf(ANSI_COLOR_YELLOW "==> slave %d: Found next point in hull: (%ld, %ld)\n" ANSI_COLOR_RESET, rank, p.x, p.y);
+    point *q = find_right_tangent(&sub_hull, &p);
+    find_next_point_in_hull(q, &p, &p);
   } while (compare_point(&p, &first_in_hull));
 
   return EX_OK;
@@ -184,14 +145,10 @@ void find_leftmost(point *local_point, point *leftmost) {
   MPI_Allreduce(local_point, leftmost, 1, mpi_point, MPI_MIN_POINT, MPI_COMM_WORLD);
 }
 
-/* TODO: Double check this method, it's probably the single most important
- * point to optimize
- * TODO: Maybe passing the points by reference to 'turn()' will improve
+/* TODO: Maybe passing the points by reference to 'turn()' will improve
  * performance
  */
 point *find_right_tangent(point_cloud *cloud, point *reference) {
-  //printf("\tcurrent reference point: (%ld, %ld)\n", reference->x, reference->y);
-
   cloud_size_t start = 0;
   cloud_size_t end = cloud->size;
 
@@ -199,7 +156,6 @@ point *find_right_tangent(point_cloud *cloud, point *reference) {
   turn_t start_next = turn(*reference, cloud->points[start], cloud->points[(start + 1) % end]);
 
   while (start < end) {
-    //printf("\tsearching in range %ld .. %ld\n", start, end);
     cloud_size_t pivot = (start + end) / 2;
     turn_t pivot_prev = turn(*reference, cloud->points[pivot], cloud->points[(pivot - 1) % cloud->size]);
     turn_t pivot_next = turn(*reference, cloud->points[pivot], cloud->points[(pivot + 1) % cloud->size]);
@@ -207,7 +163,6 @@ point *find_right_tangent(point_cloud *cloud, point *reference) {
     turn_t pivot_side = turn(*reference, cloud->points[start], cloud->points[pivot]);
 
     if ((pivot_prev != TURN_RIGHT) && (pivot_next != TURN_RIGHT)) {
-      //return &cloud->points[pivot];
       start = pivot;
       break;
     } else if ((pivot_side == TURN_LEFT && start_next == TURN_RIGHT) || (start_prev == start_next) || (pivot_side == TURN_RIGHT && pivot_prev == TURN_RIGHT)) {
@@ -220,10 +175,8 @@ point *find_right_tangent(point_cloud *cloud, point *reference) {
   }
 
   if (!compare_point(&cloud->points[start], reference)) {
-    start++;
+    start = (start + 1) % cloud->size;
   }
-
-  //printf("\treturning point at index %ld: (%ld, %ld)\n", start, cloud->points[start].x, cloud->points[start].y);
 
   return &cloud->points[start];
 }
@@ -276,11 +229,11 @@ void mpi_max_angle_op(void *invec, void *inoutvec, int *len, MPI_Datatype *type)
   if (measure == TURN_RIGHT || (measure == TURN_NONE && dist(last_point_in_hull, in[0]) > dist(last_point_in_hull, inout[0]))) {
     inout[0] = in[0];
   }
-
 }
 
 void print_usage(const char* prog_name) {
-  printf("Usage: %s <input_file>\n", prog_name);
+  printf("Usage: %s <input_file> <output_file>\n", prog_name);
   printf("Parameters:\n");
   printf("  input_file: path of the file containing point cloud data\n");
+  printf("  output_file: path of the file containing the calculated convex hull\n");
 }
