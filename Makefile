@@ -5,7 +5,7 @@ JOBFILE = jobs/mpi_convex_hull.job
 
 common_libs_objects = src/point_cloud.o src/point_cloud_io.o src/convex_hull.o
 
-mpi_convex_hull_libs_objects = src/mpi_convex_hull.o
+mpi_convex_hull_libs_objects = src/mpi_convex_hull.o src/mpi_convex_hull_benchmark.o
 mpi_convex_hull_objects = src/mpi_convex_hull_main.o $(mpi_convex_hull_libs_objects) $(common_libs_objects)
 mpi_convex_hull_executable = $(bindir)/mpi_convex_hull
 
@@ -69,7 +69,7 @@ deploy :
 
 gen_data: $(generate_point_cloud_executable)
 	-mkdir -p data
-	$(generate_point_cloud_executable) 1000000 $(datadir)/cloud.dat $(datadir)/reference_hull.dat
+	$(generate_point_cloud_executable) 10000000 $(datadir)/cloud.dat $(datadir)/reference_hull.dat
 
 plot_data:
 	GNUTERM=x11 gnuplot -e "cloud='$(datadir)/cloud.dat'; hull='$(datadir)/hull.dat'" ext/gnuplot.plg

@@ -1,4 +1,6 @@
 #include "mpi_convex_hull.h"
+#include "mpi_convex_hull_benchmark.h"
+
 #include "convex_hull.h"
 #include "point_cloud.h"
 #include "point_cloud_io.h"
@@ -55,6 +57,8 @@ int convex_hull_master(int argc, char const **argv, int rank, int cpu_count) {
   load_point_cloud(point_cloud_file, &input_cloud);
   printf(ANSI_COLOR_GREEN "==> master: Loaded point cloud with %ld points\n" ANSI_COLOR_RESET, input_cloud.size);
 
+  benchmark_start_total_time();
+
   init_mpi_runtime();
   broadcast_cloud_size(&input_cloud.size);
 
@@ -85,6 +89,10 @@ int convex_hull_master(int argc, char const **argv, int rank, int cpu_count) {
   /* The last point is equal to the first one, so we delete it from the final
    * hull */
   final_hull.size = k;
+
+  benchmark_stop_total_time();
+  printf(ANSI_COLOR_BLUE "Total running time: %f\n" ANSI_COLOR_RESET, benchmark_total_time());
+  printf(ANSI_COLOR_BLUE "Total communication time: %f\n" ANSI_COLOR_RESET, benchmark_comm_time());
 
   const char *output_filename = argv[2];
   FILE *hull_out;
@@ -129,7 +137,9 @@ int convex_hull_slave(int argc, char const **argv, int rank, int cpu_count) {
 }
 
 void broadcast_cloud_size(cloud_size_t *size) {
+  benchmark_comm_time_step_start();
   MPI_Bcast(size, 1, MPI_LONG, 0, MPI_COMM_WORLD);
+  benchmark_comm_time_step_end();
 }
 
 void scatter_cloud(point_cloud *input_cloud, point_cloud *sub_cloud, int rank, int cpu_count) {
@@ -138,11 +148,22 @@ void scatter_cloud(point_cloud *input_cloud, point_cloud *sub_cloud, int rank, i
 
   init_point_cloud(sub_cloud, chunk_sizes[rank], chunk_sizes[rank]);
 
+  benchmark_comm_time_step_start();
   MPI_Scatterv(input_cloud->points, chunk_sizes, offsets, mpi_point, sub_cloud->points, sub_cloud->size, mpi_point, 0, MPI_COMM_WORLD);
+  benchmark_comm_time_step_end();
 }
 
 void find_leftmost(point *local_point, point *leftmost) {
+  benchmark_comm_time_step_start();
   MPI_Allreduce(local_point, leftmost, 1, mpi_point, MPI_MIN_POINT, MPI_COMM_WORLD);
+  benchmark_comm_time_step_end();
+}
+
+void find_next_point_in_hull(point *local_point, point *last_found, point *next_hull_point) {
+  last_point_in_hull = *last_found;
+  benchmark_comm_time_step_start();
+  MPI_Allreduce(local_point, next_hull_point, 1, mpi_point, MPI_MAX_ANGLE, MPI_COMM_WORLD);
+  benchmark_comm_time_step_end();
 }
 
 /* TODO: Maybe passing the points by reference to 'turn()' will improve
@@ -179,11 +200,6 @@ point *find_right_tangent(point_cloud *cloud, point *reference) {
   }
 
   return &cloud->points[start];
-}
-
-void find_next_point_in_hull(point *local_point, point *last_found, point *next_hull_point) {
-  last_point_in_hull = *last_found;
-  MPI_Allreduce(local_point, next_hull_point, 1, mpi_point, MPI_MAX_ANGLE, MPI_COMM_WORLD);
 }
 
 void init_mpi_runtime() {
