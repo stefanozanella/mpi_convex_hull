@@ -41,7 +41,7 @@ int mpi_convex_hull(int argc, char const **argv) {
 }
 
 int convex_hull_master(int argc, char const **argv, int rank, int cpu_count) {
-  if (argc < 3) {
+  if (argc < 4) {
     print_usage(argv[0]);
     return EX_USAGE;
   }
@@ -93,10 +93,11 @@ int convex_hull_master(int argc, char const **argv, int rank, int cpu_count) {
 
   benchmark_stop_total_time();
 
+  const char *benchmark_filename = argv[3];
   FILE *benchmark_out;
-  if ((benchmark_out = fopen("data/benchmark.dat", "w")) == NULL) {
+  if ((benchmark_out = fopen(benchmark_filename, "w")) == NULL) {
     /* TODO: Output to stderr */
-    printf("Error opening file data/benchmark.dat. Aborting.\n");
+    printf("Error opening file %s. Aborting.\n", benchmark_filename);
     return EX_IOERR;
   }
   save_benchmark(benchmark_out, cpu_count, input_cloud.size, benchmark_total_time(), benchmark_comm_time(), benchmark_comm_ratio());
@@ -259,5 +260,6 @@ void print_usage(const char* prog_name) {
   printf("Usage: %s <input_file> <output_file>\n", prog_name);
   printf("Parameters:\n");
   printf("  input_file: path of the file containing point cloud data\n");
-  printf("  output_file: path of the file containing the calculated convex hull\n");
+  printf("  output_file: path of the file where the calculated convex hull will be saved\n");
+  printf("  benchmark_file: path of the file where benchmark metrics will be written\n");
 }

@@ -58,7 +58,7 @@ clear : clean
 	-rm -rf $(rundir) $(datadir)
 
 run :
-	mpirun -np $(CPUS) $(mpi_convex_hull_executable) $(datadir)/cloud.dat $(datadir)/hull.dat
+	mpirun -np $(CPUS) $(mpi_convex_hull_executable) $(datadir)/cloud.dat $(datadir)/hull.dat $(datadir)/benchmark.cvs
 
 submit : $(mpi_convex_hull_executable)
 	-mkdir -p $(rundir)

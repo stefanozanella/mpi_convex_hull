@@ -3,5 +3,5 @@
 *.o
 bin
 .vagrant
-data/*.dat
+data
 tmp
