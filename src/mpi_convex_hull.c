@@ -49,6 +49,7 @@ int convex_hull_master(int argc, char const **argv, int rank, int cpu_count) {
   const char *input_filename = argv[1];
   FILE *point_cloud_file;
   if ((point_cloud_file = fopen(input_filename, "r")) == NULL) {
+    /* TODO: Output to stderr */
     printf(ANSI_COLOR_RED "Error: cannot open file %s. Aborting.\n" ANSI_COLOR_RESET, input_filename);
     return EX_IOERR;
   }
@@ -91,13 +92,20 @@ int convex_hull_master(int argc, char const **argv, int rank, int cpu_count) {
   final_hull.size = k;
 
   benchmark_stop_total_time();
-  printf(ANSI_COLOR_BLUE "Total running time: %f\n" ANSI_COLOR_RESET, benchmark_total_time());
-  printf(ANSI_COLOR_BLUE "Total communication time: %f\n" ANSI_COLOR_RESET, benchmark_comm_time());
+
+  FILE *benchmark_out;
+  if ((benchmark_out = fopen("data/benchmark.dat", "w")) == NULL) {
+    /* TODO: Output to stderr */
+    printf("Error opening file data/benchmark.dat. Aborting.\n");
+    return EX_IOERR;
+  }
+  save_benchmark(benchmark_out, cpu_count, input_cloud.size, benchmark_total_time(), benchmark_comm_time(), benchmark_comm_ratio());
+  fclose(benchmark_out);
 
   const char *output_filename = argv[2];
   FILE *hull_out;
   if ((hull_out = fopen(output_filename, "w")) == NULL) {
-    /* TODO: Error handling */
+    /* TODO: Output to stderr */
     printf("Error opening file %s. Aborting.\n", output_filename);
     return EX_IOERR;
   }
@@ -237,7 +245,6 @@ void mpi_min_point_op(void *invec, void *inoutvec, int *len, MPI_Datatype *type)
 }
 
 void mpi_max_angle_op(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
-  /* TODO: This might be optimized by inlining the cast */
   point* in = (point*) invec;
   point* inout = (point*) inoutvec;
 
@@ -248,6 +255,7 @@ void mpi_max_angle_op(void *invec, void *inoutvec, int *len, MPI_Datatype *type)
 }
 
 void print_usage(const char* prog_name) {
+  /* TODO: Output to stderr */
   printf("Usage: %s <input_file> <output_file>\n", prog_name);
   printf("Parameters:\n");
   printf("  input_file: path of the file containing point cloud data\n");
