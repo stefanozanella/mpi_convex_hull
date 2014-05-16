@@ -1,7 +1,9 @@
 # vim: noexpandtab
 
-CPUS = 4
-JOBFILE = jobs/mpi_convex_hull.job
+CPUS = 1 2 4
+RUN_CPUS = 4
+SIZES = 100000 200000 500000
+JOB_TEMPLATE = jobs/mpi_convex_hull.tpl
 
 common_libs_objects = src/point_cloud.o src/point_cloud_io.o src/convex_hull.o
 
@@ -17,6 +19,8 @@ bindir = bin
 rundir = run
 datadir = data
 srcdir = src
+
+jobfiles = $(foreach size, $(SIZES), $(foreach cpu, $(CPUS), jobs/mpi_convex_hull_$(size)_$(cpu).job))
 
 mpcc := $(shell which mpcc 2> /dev/null)
 mpicc := $(shell which mpicc 2> /dev/null)
@@ -37,6 +41,8 @@ endif
 CFLAGS = -std=c99
 CLIBS = -lm
 
+SHELL = /bin/bash
+
 $(mpi_convex_hull_executable) : $(mpi_convex_hull_objects) $(bindir)
 	$(CC) $(CFLAGS) -o $(mpi_convex_hull_executable) $(mpi_convex_hull_objects) $(CLIBS)
 
@@ -45,6 +51,13 @@ $(generate_point_cloud_executable) : $(generate_point_cloud_objects) $(bindir)
 
 $(bindir) :
 	mkdir $(bindir)
+
+$(jobfiles) :
+	for size in $(SIZES); do \
+		for cpu in $(CPUS); do \
+			sed -e "s/%cpus%/$${cpu}/g" -e "s/%size%/$${size}/g" $(JOB_TEMPLATE) > jobs/mpi_convex_hull_$${size}_$${cpu}.job; \
+		done; \
+	done
 
 all : $(mpi_convex_hull_executable) $(generate_point_cloud_executable)
 
@@ -57,23 +70,27 @@ clean_data :
 clear : clean
 	-rm -rf $(rundir) $(datadir)
 
-run :
-	mpirun -np $(CPUS) $(mpi_convex_hull_executable) $(datadir)/cloud.dat $(datadir)/hull.dat $(datadir)/benchmark.cvs
-
-submit : $(mpi_convex_hull_executable)
+submit : $(mpi_convex_hull_executable) $(jobfiles)
 	-mkdir -p $(rundir)
-	llsubmit $(JOBFILE)
+	for job in $(jobfiles); do \
+		llsubmit $${job}; \
+	done
 
 deploy :
-	rsync -aPv . splab:mpi_convex_hull --exclude="*.sw[po]" --exclude="*.o" --exclude="tmp" --exclude="bin"
+	rsync -aPv . splab:mpi_convex_hull --exclude="*.sw[po]" --exclude="*.o" --exclude="tmp" --exclude="bin" --exclude="data/*.cvs"
+
+run :
+	mpirun -np $(RUN_CPUS) $(mpi_convex_hull_executable) $(datadir)/cloud_100000.dat $(datadir)/hull_100000.dat $(datadir)/benchmark_100000.cvs
 
 gen_data: $(generate_point_cloud_executable)
 	-mkdir -p data
-	$(generate_point_cloud_executable) 10000000 $(datadir)/cloud.dat $(datadir)/reference_hull.dat
+	for size in $(SIZES); do \
+		$(generate_point_cloud_executable) $${size} $(datadir)/cloud_$${size}.dat $(datadir)/reference_hull_$${size}.dat; \
+	done
 
 plot_data:
-	GNUTERM=x11 gnuplot -e "cloud='$(datadir)/cloud.dat'; hull='$(datadir)/hull.dat'" ext/gnuplot.plg
+	GNUTERM=x11 gnuplot -e "cloud='$(datadir)/cloud_100000.dat'; hull='$(datadir)/reference_hull_100000.dat'" ext/gnuplot.plg
 
 include test/Makefile
 
-.PHONY : all, clean, clear, run, submit, deploy, gen_data, plot_data
+.PHONY : all, clean, clear, run, submit, deploy, gen_data, plot_data, jobs
