@@ -2,7 +2,7 @@
 #define POINT_CLOUD_H
 
 typedef unsigned long cloud_size_t;
-typedef long coord_t;
+typedef long long coord_t;
 
 /**
  * Point, represented by a pair of coordinates

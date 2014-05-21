@@ -75,7 +75,7 @@ int convex_hull_master(int argc, char const **argv, int rank, int cpu_count) {
 
   find_leftmost(&(sub_hull.points[0]), &(final_hull.points[0]));
 
-  printf(ANSI_COLOR_GREEN "==> master: Found leftmost point: (%ld, %ld)\n" ANSI_COLOR_RESET, final_hull.points[0].x, final_hull.points[0].y);
+  printf(ANSI_COLOR_GREEN "==> master: Found leftmost point: (%lld, %lld)\n" ANSI_COLOR_RESET, final_hull.points[0].x, final_hull.points[0].y);
 
   int k = 0;
   point max;
@@ -93,7 +93,7 @@ int convex_hull_master(int argc, char const **argv, int rank, int cpu_count) {
     MPI_Bcast(&(final_hull.points[k+1]), 1, mpi_point, 0, MPI_COMM_WORLD);
     k++;
 
-    printf(ANSI_COLOR_GREEN "==> master: Found next point in hull: (%ld, %ld)\n" ANSI_COLOR_RESET, final_hull.points[k].x, final_hull.points[k].y);
+    printf(ANSI_COLOR_GREEN "==> master: Found next point in hull: (%lld, %lld)\n" ANSI_COLOR_RESET, final_hull.points[k].x, final_hull.points[k].y);
   } while (compare_point(&(final_hull.points[k]), &(final_hull.points[0])));
 
   /* The last point is equal to the first one, so we delete it from the final
@@ -227,7 +227,7 @@ point *find_right_tangent(point_cloud *cloud, point *reference) {
 void init_mpi_runtime() {
   int blockcounts[1] = { 2 };
   MPI_Aint offsets[1] = { 0 };
-  MPI_Datatype types[1] = { MPI_LONG };
+  MPI_Datatype types[1] = { MPI_LONG_LONG };
 
   MPI_Type_struct(1, blockcounts, offsets, types, &mpi_point);
   MPI_Type_commit(&mpi_point);
@@ -257,7 +257,7 @@ void mpi_min_point_op(void *invec, void *inoutvec, int *len, MPI_Datatype *type)
   }
 }
 
-// TODO This looks ugly
+/* TODO This looks ugly */
 point *max_angle(point *x, point *y, point *reference) {
   turn_t measure = turn(*reference, *x, *y);
   if (measure == TURN_RIGHT || (measure == TURN_NONE && dist(*reference, *x) > dist(*reference, *y))) {

@@ -5,7 +5,7 @@
 
 #include <stdio.h>
 
-#define POINT_FMT "%ld\t%ld\n"
+#define POINT_FMT "%lld\t%lld\n"
 #define CLOUD_SIZE_FMT "# size=%ld\n"
 
 /**
