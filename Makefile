@@ -77,7 +77,7 @@ submit : $(mpi_convex_hull_executable) $(jobfiles)
 	done
 
 deploy :
-	rsync -aPv . splab:mpi_convex_hull --exclude="*.sw[po]" --exclude="*.o" --exclude="tmp" --exclude="bin" --exclude="data/*.cvs"
+	rsync -aPv . splab:mpi_convex_hull --exclude=".git" --exclude="*.sw[po]" --exclude="*.o" --exclude="tmp" --exclude="bin" --exclude="data/*.cvs"
 
 run :
 	mpirun -np $(RUN_CPUS) $(mpi_convex_hull_executable) $(datadir)/cloud_100000.dat $(datadir)/hull_100000.dat $(datadir)/benchmark_100000.cvs
