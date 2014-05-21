@@ -1,8 +1,8 @@
 # vim: noexpandtab
 
-CPUS = 1 2 4
+CPUS = 1 2 4 8 16 32 64 92
 RUN_CPUS = 4
-SIZES = 100000 200000 500000
+SIZES = 100000 200000 500000 1000000 2000000 5000000 10000000
 JOB_TEMPLATE = jobs/mpi_convex_hull.tpl
 
 common_libs_objects = src/point_cloud.o src/point_cloud_io.o src/convex_hull.o
