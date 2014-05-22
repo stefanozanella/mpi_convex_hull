@@ -62,13 +62,17 @@ int convex_hull_master(int argc, char const **argv, int rank, int cpu_count) {
   init_mpi_runtime();
   broadcast_cloud_size(&input_cloud.size);
 
+  benchmark_start_scatter_time();
   point_cloud sub_cloud;
   scatter_cloud(&input_cloud, &sub_cloud, rank, cpu_count);
+  benchmark_stop_scatter_time();
   printf(ANSI_COLOR_GREEN "==> master: Received point cloud chunk of size %ld\n" ANSI_COLOR_RESET, sub_cloud.size);
 
+  benchmark_start_subhull_time();
   printf(ANSI_COLOR_GREEN "==> master: Calculating convex hull for sub cloud\n" ANSI_COLOR_RESET);
   point_cloud sub_hull;
   convex_hull_graham_scan(&sub_cloud, &sub_hull);
+  benchmark_stop_subhull_time();
 
   point_cloud final_hull;
   init_point_cloud(&final_hull, 0, input_cloud.size);
@@ -77,24 +81,32 @@ int convex_hull_master(int argc, char const **argv, int rank, int cpu_count) {
 
   printf(ANSI_COLOR_GREEN "==> master: Found leftmost point: (%lld, %lld)\n" ANSI_COLOR_RESET, final_hull.points[0].x, final_hull.points[0].y);
 
+  benchmark_start_merge_time();
   int k = 0;
   point max;
   do {
+    benchmark_tangent_time_step_start();
     max = *find_right_tangent(&sub_hull, &(final_hull.points[k]));
+    benchmark_tangent_time_step_end();
 
     for (int m = 2; m <= cpu_count; m = m << 1) {
         point received;
+        benchmark_comm_time_step_start();
         MPI_Recv(&received, 1, mpi_point, rank + (m >> 1), 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        benchmark_comm_time_step_end();
         max = *max_angle(&max, &received, &(final_hull.points[k]));
     }
 
     final_hull.points[k+1] = max;
 
+    benchmark_comm_time_step_start();
     MPI_Bcast(&(final_hull.points[k+1]), 1, mpi_point, 0, MPI_COMM_WORLD);
+    benchmark_comm_time_step_end();
     k++;
 
     printf(ANSI_COLOR_GREEN "==> master: Found next point in hull: (%lld, %lld)\n" ANSI_COLOR_RESET, final_hull.points[k].x, final_hull.points[k].y);
   } while (compare_point(&(final_hull.points[k]), &(final_hull.points[0])));
+  benchmark_stop_merge_time();
 
   /* The last point is equal to the first one, so we delete it from the final
    * hull */
@@ -108,7 +120,7 @@ int convex_hull_master(int argc, char const **argv, int rank, int cpu_count) {
     printf("Error opening file %s. Aborting.\n", benchmark_filename);
     return EX_IOERR;
   }
-  save_benchmark(benchmark_out, cpu_count, input_cloud.size, benchmark_total_time(), benchmark_comm_time(), benchmark_comm_ratio());
+  save_benchmark(benchmark_out, cpu_count, input_cloud.size, benchmark_total_time(), benchmark_subhull_time(), benchmark_scatter_time(), benchmark_merge_time(), benchmark_tangent_time(), benchmark_comm_time(), benchmark_comm_ratio());
   fclose(benchmark_out);
 
   const char *output_filename = argv[2];
