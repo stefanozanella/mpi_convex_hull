@@ -4,6 +4,7 @@ CPUS = 1 2 4 8 16 32 64
 RUN_CPUS = 4
 SIZES = 100000 200000 500000 1000000 2000000
 JOB_TEMPLATE = jobs/mpi_convex_hull.tpl
+OPT_LEVEL = 0
 
 common_libs_objects = src/point_cloud.o src/point_cloud_io.o src/convex_hull.o
 
@@ -38,7 +39,7 @@ ifeq ($(mpicc)$(mpcc),)
 		build the project on a suitable machine)
 endif
 
-CFLAGS = -std=c99
+CFLAGS = -O$(OPT_LEVEL) -std=c99
 CLIBS = -lm
 
 SHELL = /bin/bash
@@ -77,7 +78,7 @@ submit : $(mpi_convex_hull_executable) $(jobfiles)
 	done
 
 deploy :
-	rsync -aPv . splab:mpi_convex_hull --exclude=".git" --exclude="*.sw[po]" --exclude="*.o" --exclude="tmp" --exclude="bin" --exclude="data/*.cvs"
+	rsync -aPv . splab:mpi_convex_hull --exclude=".git" --exclude="*.sw[po]" --exclude="*.o" --exclude="tmp" --exclude="bin" --exclude="data/*.cvs" --exclude="doc"
 
 run :
 	mpirun -np $(RUN_CPUS) $(mpi_convex_hull_executable) $(datadir)/cloud_100000.dat $(datadir)/hull_100000.dat $(datadir)/benchmark_100000.cvs
