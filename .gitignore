@@ -6,3 +6,4 @@ bin
 data
 tmp
 jobs/*.job
+.~lock.*
