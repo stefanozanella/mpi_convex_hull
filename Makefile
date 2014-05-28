@@ -75,6 +75,7 @@ submit : $(mpi_convex_hull_executable) $(jobfiles)
 	-mkdir -p $(rundir)
 	for job in $(jobfiles); do \
 		llsubmit $${job}; \
+		sleep 20; \
 	done
 
 deploy :
