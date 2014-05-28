@@ -83,25 +83,11 @@ int convex_hull_master(int argc, char const **argv, int rank, int cpu_count) {
 
   benchmark_start_merge_time();
   int k = 0;
-  point max;
   do {
     benchmark_tangent_time_step_start();
-    max = *find_right_tangent(&sub_hull, &(final_hull.points[k]));
+    point *q = find_right_tangent(&sub_hull, &(final_hull.points[k]));
     benchmark_tangent_time_step_end();
-
-    for (int m = 2; m <= cpu_count; m = m << 1) {
-        point received;
-        benchmark_comm_time_step_start();
-        MPI_Recv(&received, 1, mpi_point, rank + (m >> 1), 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        benchmark_comm_time_step_end();
-        max = *max_angle(&max, &received, &(final_hull.points[k]));
-    }
-
-    final_hull.points[k+1] = max;
-
-    benchmark_comm_time_step_start();
-    MPI_Bcast(&(final_hull.points[k+1]), 1, mpi_point, 0, MPI_COMM_WORLD);
-    benchmark_comm_time_step_end();
+    find_next_point_in_hull(q, &(final_hull.points[k]), &(final_hull.points[k+1]));
     k++;
 
     printf(ANSI_COLOR_GREEN "==> master: Found next point in hull: (%lld, %lld)\n" ANSI_COLOR_RESET, final_hull.points[k].x, final_hull.points[k].y);
@@ -156,22 +142,9 @@ int convex_hull_slave(int argc, char const **argv, int rank, int cpu_count) {
   find_leftmost(&(sub_hull.points[0]), &first_in_hull);
 
   point p = first_in_hull;
-
   do {
-    point max = *find_right_tangent(&sub_hull, &p);
-    for (int k = 2; k <= cpu_count; k = k << 1) {
-      if (rank % k == 0) {
-        point received;
-        MPI_Recv(&received, 1, mpi_point, rank + (k >> 1), 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
-        max = *max_angle(&max, &received, &p);
-      } else if (rank % (k >> 1) == 0) {
-        MPI_Send(&max, 1, mpi_point, rank - (k >> 1), 0, MPI_COMM_WORLD);
-      }
-    }
-
-    MPI_Bcast(&p, 1, mpi_point, 0, MPI_COMM_WORLD);
-
+    point *q = find_right_tangent(&sub_hull, &p);
+    find_next_point_in_hull(q, &p, &p);
   } while (compare_point(&p, &first_in_hull));
 
   return EX_OK;
@@ -197,6 +170,13 @@ void scatter_cloud(point_cloud *input_cloud, point_cloud *sub_cloud, int rank, i
 void find_leftmost(point *local_point, point *leftmost) {
   benchmark_comm_time_step_start();
   MPI_Allreduce(local_point, leftmost, 1, mpi_point, MPI_MIN_POINT, MPI_COMM_WORLD);
+  benchmark_comm_time_step_end();
+}
+
+void find_next_point_in_hull(point *local_point, point *last_found, point *next_hull_point) {
+  last_point_in_hull = *last_found;
+  benchmark_comm_time_step_start();
+  MPI_Allreduce(local_point, next_hull_point, 1, mpi_point, MPI_MAX_ANGLE, MPI_COMM_WORLD);
   benchmark_comm_time_step_end();
 }
 
@@ -245,6 +225,7 @@ void init_mpi_runtime() {
   MPI_Type_commit(&mpi_point);
 
   MPI_Op_create(&mpi_min_point_op, 1, &MPI_MIN_POINT);
+  MPI_Op_create(&mpi_max_angle_op, 1, &MPI_MAX_ANGLE);
 }
 
 void setup_scatter_params(cloud_size_t input_size, int dest_count, int *sizes, int *offsets) {
@@ -269,13 +250,13 @@ void mpi_min_point_op(void *invec, void *inoutvec, int *len, MPI_Datatype *type)
   }
 }
 
-/* TODO This looks ugly */
-point *max_angle(point *x, point *y, point *reference) {
-  turn_t measure = turn(*reference, *x, *y);
-  if (measure == TURN_RIGHT || (measure == TURN_NONE && dist(*reference, *x) > dist(*reference, *y))) {
-    return y;
-  } else {
-    return x;
+void mpi_max_angle_op(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
+  point* in = (point*) invec;
+  point* inout = (point*) inoutvec;
+
+  turn_t measure = turn(last_point_in_hull, inout[0], in[0]);
+  if (measure == TURN_RIGHT || (measure == TURN_NONE && dist(last_point_in_hull, in[0]) > dist(last_point_in_hull, inout[0]))) {
+    inout[0] = in[0];
   }
 }
 
