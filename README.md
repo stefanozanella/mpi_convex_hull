@@ -4,7 +4,7 @@
 To compile the whole project, issue the following from within project's root
 dir:
 
-  make all
+    make all
 
 This will build two binaries in the `bin/` folder.
 
@@ -34,7 +34,8 @@ are produced in the `data` directory:
     compared with the reference hull for the given input size using `diff`, for
     example:
 
-      diff data/reference_hull_100000.dat data/hull_100000.dat
-
+    ```
+    diff data/reference_hull_100000.dat data/hull_100000.dat
+    ```
     The output should report no differences.
 
